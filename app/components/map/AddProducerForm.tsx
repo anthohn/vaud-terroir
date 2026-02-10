@@ -1,19 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle } from 'lucide-react'; // Assure-toi d'avoir lucide-react, sinon utilise un emoji ✅
+import { CheckCircle, MapPin, Clock } from 'lucide-react';
+import OpeningHoursEditor, { WeeklyHours } from './OpeningHoursEditor';
 
 type Props = {
     lat: number;
     lng: number;
-    onSuccess: () => void; // Ça servira à fermer la fenêtre à la fin
+    onSuccess: () => void;
     onCancel: () => void;
 };
 
 export default function AddProducerForm({ lat, lng, onSuccess, onCancel }: Props) {
+    const [loading, setLoading] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [imageFile, setImageFile] = useState<File | null>(null);
 
-    // --- Gestion des Tags (Produits) ---
+    const [openingHours, setOpeningHours] = useState<WeeklyHours | null>(null);
+
+    // Nouveaux états
+    const [address, setAddress] = useState('');
+    const [isFetchingAddress, setIsFetchingAddress] = useState(false);
+
+    // Tags (inchangé)
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const availableTags = [
         { id: 'Lait', label: '🥛 Lait cru' },
@@ -26,17 +36,31 @@ export default function AddProducerForm({ lat, lng, onSuccess, onCancel }: Props
     ];
 
     const toggleTag = (tag: string) => {
-        if (selectedTags.includes(tag)) {
-            setSelectedTags(selectedTags.filter(t => t !== tag));
-        } else {
-            setSelectedTags([...selectedTags, tag]);
-        }
+        if (selectedTags.includes(tag)) setSelectedTags(selectedTags.filter(t => t !== tag));
+        else setSelectedTags([...selectedTags, tag]);
     };
 
-    // --- États du formulaire ---
-    const [loading, setLoading] = useState(false);
-    const [isSubmitted, setIsSubmitted] = useState(false); // <--- NOUVEL ÉTAT !
-    const [imageFile, setImageFile] = useState<File | null>(null);
+    // --- AUTO-ADRESSE MAGIQUE ---
+    useEffect(() => {
+        const fetchAddress = async () => {
+            setIsFetchingAddress(true);
+            try {
+                // On demande à OpenStreetMap : "C'est où ça ?"
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                const data = await response.json();
+                if (data && data.display_name) {
+                    // On nettoie un peu l'adresse pour qu'elle soit plus courte
+                    const cleanAddress = data.display_name.split(',').slice(0, 4).join(',');
+                    setAddress(cleanAddress);
+                }
+            } catch (error) {
+                console.error("Erreur adresse", error);
+            } finally {
+                setIsFetchingAddress(false);
+            }
+        };
+        fetchAddress();
+    }, [lat, lng]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -46,29 +70,16 @@ export default function AddProducerForm({ lat, lng, onSuccess, onCancel }: Props
         const name = formData.get('name') as string;
         let imageUrl = null;
 
-        // 1. Upload de l'image
         if (imageFile) {
             const fileExt = imageFile.name.split('.').pop();
             const fileName = `${name.replace(/\s/g, '-').toLowerCase()}-${Date.now()}.${fileExt}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('producers-images')
-                .upload(fileName, imageFile);
-
-            if (uploadError) {
-                alert('Erreur upload image: ' + uploadError.message);
-                setLoading(false);
-                return;
-            }
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('producers-images')
-                .getPublicUrl(fileName);
-
+            const { error: uploadError } = await supabase.storage.from('producers-images').upload(fileName, imageFile);
+            if (uploadError) { alert('Erreur upload'); setLoading(false); return; }
+            const { data: { publicUrl } } = supabase.storage.from('producers-images').getPublicUrl(fileName);
             imageUrl = publicUrl;
         }
 
-        // 2. Enregistrement en base de données (Status sera 'pending' automatiquement via la fonction SQL)
+        // Appel RPC mis à jour avec les nouveaux champs
         const { error } = await supabase.rpc('create_producer', {
             name_input: name,
             description_input: formData.get('description'),
@@ -76,125 +87,99 @@ export default function AddProducerForm({ lat, lng, onSuccess, onCancel }: Props
             labels_input: selectedTags.length > 0 ? selectedTags : ['Divers'],
             lat_input: lat,
             lng_input: lng,
-            image_url_input: imageUrl
+            image_url_input: imageUrl,
+            address_input: formData.get('address'),        // <-- On envoie l'adresse
+            opening_hours_input: openingHours // <-- On envoie les horaires
         });
 
         setLoading(false);
-
-        if (error) {
-            alert('Erreur base de données: ' + error.message);
-        } else {
-            // AU LIEU DE FERMER DIRECTEMENT, ON AFFICHE LE SUCCÈS
-            setIsSubmitted(true);
-        }
+        if (error) alert('Erreur: ' + error.message);
+        else setIsSubmitted(true);
     };
 
-    // --- ÉCRAN DE SUCCÈS (Si soumis) ---
     if (isSubmitted) {
         return (
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-8 rounded-xl shadow-2xl z-[1000] w-[90%] max-w-sm border-2 border-green-600 text-center">
-                <div className="flex justify-center mb-4">
-                    <div className="bg-green-100 p-4 rounded-full">
-                        {/* Si tu n'as pas lucide-react, remplace <CheckCircle /> par <span className="text-4xl">✅</span> */}
-                        <CheckCircle size={48} className="text-green-600" />
-                    </div>
-                </div>
-
-                <h3 className="font-bold text-xl mb-2 text-gray-800">Merci beaucoup ! 🚜</h3>
-
-                <p className="text-gray-600 mb-6 text-sm leading-relaxed">
-                    Votre proposition a bien été envoyée.
-                    <br /><br />
-                    <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-bold uppercase">
-                        En attente de validation
-                    </span>
-                    <br /><br />
-                    Un administrateur va vérifier les infos avant de l'afficher sur la carte pour tout le monde.
-                </p>
-
-                <button
-                    onClick={onSuccess} // C'est ici qu'on ferme vraiment la fenêtre
-                    className="w-full py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors"
-                >
-                    Compris, retour à la carte
-                </button>
+                <CheckCircle size={48} className="text-green-600 mx-auto mb-4" />
+                <h3 className="font-bold text-xl mb-2">Merci ! 🚜</h3>
+                <p className="text-gray-600 mb-6 text-sm">En attente de validation.</p>
+                <button onClick={onSuccess} className="w-full py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700">Retour à la carte</button>
             </div>
         );
     }
 
-    // --- FORMULAIRE STANDARD (Si pas encore soumis) ---
     return (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-xl shadow-2xl z-[1000] w-[90%] max-w-sm border-2 border-green-600 max-h-[90vh] overflow-y-auto">
-            <h3 className="font-bold text-lg mb-4 text-green-800">Ajouter un lieu ici ? 📍</h3>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-xl shadow-2xl z-[1000] w-[95%] max-w-md border-2 border-green-600 max-h-[90vh] overflow-y-auto">
+            <h3 className="font-bold text-lg mb-4 text-green-800">Ajouter un lieu 📍</h3>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-                {/* ... (Tout le reste de ton formulaire reste identique ici) ... */}
 
-                {/* Champ IMAGE */}
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:bg-gray-50 transition-colors cursor-pointer relative">
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                    <div className="text-sm text-gray-500">
-                        {imageFile ? (
-                            <span className="text-green-600 font-bold">📷 {imageFile.name}</span>
-                        ) : (
-                            <span>📸 Ajouter une photo (optionnel)</span>
-                        )}
-                    </div>
+                {/* IMAGE */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer relative hover:bg-gray-50">
+                    <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] || null)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                    <span className="text-sm text-gray-500">{imageFile ? `📷 ${imageFile.name}` : "📸 Ajouter une photo"}</span>
                 </div>
 
-                {/* Champ NOM */}
+                {/* NOM */}
                 <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase">Nom</label>
-                    <input required name="name" type="text" placeholder="Ex: Ferme des Tilleuls" className="w-full border p-2 rounded text-sm" />
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Nom :</label>
+                    <input required name="name" type="text" placeholder="Ex: Ferme des Tilleuls" className="w-full border border-gray-300 p-2 rounded text-sm" />
                 </div>
 
-                {/* Champ TAGS */}
+                {/* TYPE */}
                 <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Produits disponibles</label>
-                    <div className="flex flex-wrap gap-2">
-                        {availableTags.map(tag => (
-                            <button
-                                key={tag.id}
-                                type="button"
-                                onClick={() => toggleTag(tag.id)}
-                                className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${selectedTags.includes(tag.id)
-                                        ? 'bg-green-600 text-white border-green-600'
-                                        : 'bg-white text-gray-600 border-gray-300'
-                                    }`}
-                            >
-                                {tag.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Champ TYPE */}
-                <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase">Type de lieu</label>
-                    <select name="type" className="w-full border p-2 rounded text-sm bg-white">
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Type :</label>
+                    <select name="type" className="w-full border border-gray-300 p-2 rounded text-sm bg-white cursor-pointer">
                         <option value="farm_shop">🚜 Magasin à la ferme</option>
                         <option value="vending_machine">🥛 Automate</option>
                         <option value="cellar">🍷 Cave / Vigneron</option>
                     </select>
                 </div>
 
-                {/* Champ DESCRIPTION */}
+                {/* TAGS */}
                 <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase">Description</label>
-                    <textarea name="description" placeholder="Horaires, produits..." className="w-full border p-2 rounded text-sm h-20" />
+                    <label className="text-xs font-semibold text-gray-500 uppercase mb-2 block">Produits</label>
+                    <div className="flex flex-wrap gap-2">
+                        {availableTags.map(tag => (
+                            <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)} className={`px-3 py-1 rounded-full text-xs font-bold border border-gray-300 cursor-pointer ${selectedTags.includes(tag.id) ? 'bg-green-600 text-white' : 'bg-white text-gray-600'}`}>
+                                {tag.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                {/* BOUTONS */}
+                {/* ADRESSE (Auto-remplie) */}
+                <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase flex items-center gap-1">
+                        {/* <MapPin size={12} /> */}
+                        Adresse :
+                    </label>
+                    <div className="relative">
+                        <input
+                            name="address"
+                            type="text"
+                            value={address}
+                            onChange={(e) => setAddress(e.target.value)} // On peut corriger manuellement
+                            className={`w-full border border-gray-300 p-2 rounded text-sm ${isFetchingAddress ? 'bg-gray-100 text-gray-400' : ''}`}
+                        />
+                        {isFetchingAddress && <span className="absolute right-2 top-2 text-xs">🔍...</span>}
+                    </div>
+                </div>
+
+                {/* HORAIRES (Nouveau) */}
+                <OpeningHoursEditor onChange={setOpeningHours} />
+
+
+
+                {/* DESCRIPTION */}
+                <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Description</label>
+                    <textarea name="description" placeholder="Détails supplémentaires..." className="w-full border border-gray-300 p-2 rounded text-sm h-16" />
+                </div>
+
                 <div className="flex gap-2 mt-2">
-                    <button type="button" onClick={onCancel} className="flex-1 py-2 text-gray-600 font-bold bg-gray-100 rounded">Annuler</button>
-                    <button disabled={loading} type="submit" className="flex-1 py-2 bg-green-600 text-white font-bold rounded hover:bg-green-700">
-                        {loading ? 'Envoi...' : 'Valider'}
-                    </button>
+                    <button type="button" onClick={onCancel} className="flex-1 py-2 bg-gray-100 rounded text-gray-600 font-bold cursor-pointer">Annuler</button>
+                    <button disabled={loading} type="submit" className="flex-1 py-2 bg-green-600 text-white font-bold rounded hover:bg-green-700 cursor-pointer">{loading ? '...' : 'Valider'}</button>
                 </div>
             </form>
         </div>
