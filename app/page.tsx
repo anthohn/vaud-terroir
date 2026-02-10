@@ -19,13 +19,6 @@ export default function Home() {
       <div className="w-full h-[100dvh]">
         <MapWithNoSSR />
       </div>
-
-      {/* Exemple d'un petit bouton flottant "Lead Dev Style" pour tester l'UI mobile */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000]">
-        <button className="bg-green-600 text-white px-6 py-3 rounded-full shadow-lg font-bold active:scale-95 transition-transform">
-          Trouver autour de moi 📍
-        </button>
-      </div>
     </main>
   );
 }
