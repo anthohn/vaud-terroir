@@ -1,12 +1,13 @@
 'use client';
 
 import { Producer } from '@/types';
-import { X, Navigation, Clock, MapPin } from 'lucide-react';
+import { X, Navigation, Clock, MapPin, Edit } from 'lucide-react'; // Ajout de Edit
 import { useEffect, useState } from 'react';
 
 type Props = {
     producer: Producer;
     onClose: () => void;
+    onEdit: () => void; // Ajout de la prop onEdit
 };
 
 // Helper pour les emojis
@@ -34,7 +35,7 @@ const DAY_NAMES: { [key: string]: string } = {
 // Ici on affiche du Lundi au Dimanche classique
 const SORTED_DAYS = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su'];
 
-export default function ProducerPanel({ producer, onClose }: Props) {
+export default function ProducerPanel({ producer, onClose, onEdit }: Props) {
     // Animation d'entrée (Slide in)
     const [isVisible, setIsVisible] = useState(false);
 
@@ -107,13 +108,25 @@ export default function ProducerPanel({ producer, onClose }: Props) {
       `}
         >
 
-            {/* Bouton Fermer (Flottant en haut à droite) */}
-            <button
-                onClick={handleClose}
-                className="absolute top-4 right-4 z-10 bg-white/80 backdrop-blur p-2 rounded-full shadow-md hover:bg-white transition-colors group"
-            >
-                <X size={20} className="text-gray-600 group-hover:text-black" />
-            </button>
+            {/* HEADER BOUTONS (Fermer et Modifier) */}
+            <div className="absolute top-4 right-4 z-10 flex gap-2">
+                {/* Bouton MODIFIER */}
+                <button
+                    onClick={onEdit}
+                    className="bg-white/80 backdrop-blur p-2 rounded-full shadow-md hover:bg-white hover:text-green-600 transition-colors group"
+                    title="Suggérer une modification"
+                >
+                    <Edit size={20} className="text-gray-600 group-hover:text-green-600" />
+                </button>
+
+                {/* Bouton FERMER */}
+                <button
+                    onClick={handleClose}
+                    className="bg-white/80 backdrop-blur p-2 rounded-full shadow-md hover:bg-white transition-colors group"
+                >
+                    <X size={20} className="text-gray-600 group-hover:text-black" />
+                </button>
+            </div>
 
             {/* --- ZONE 1 : IMAGE HERO --- */}
             <div className="h-64 shrink-0 relative bg-gray-100">

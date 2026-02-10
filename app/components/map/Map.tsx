@@ -1,6 +1,6 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'; // Plus besoin de Popup !
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useState, useMemo } from 'react';
@@ -8,8 +8,8 @@ import { supabase } from '@/lib/supabase';
 import { Producer } from '@/types';
 import AddProducerForm from './AddProducerForm';
 import FilterBar from './FilterBar';
-import ProducerPanel from './ProducerPanel'; // <--- IMPORT DU NOUVEAU COMPOSANT
-import { Navigation, Locate, Plus, MapPin, X, Check } from 'lucide-react';
+import ProducerPanel from './ProducerPanel';
+import { Locate, Plus, MapPin, X, Check } from 'lucide-react';
 
 // --- Fix Icônes Leaflet ---
 const fixLeafletIcon = () => {
@@ -47,7 +47,6 @@ const LocateControl = () => {
     };
 
     return (
-        // On remonte un peu le bouton pour pas qu'il soit caché par le panneau sur mobile
         <div className="absolute bottom-32 right-4 z-[400]">
             <button onClick={handleLocate} className="bg-white text-gray-700 p-3 rounded-full shadow-lg font-bold border border-gray-100">
                 {loading ? <span className="animate-spin">⌛</span> : <Locate size={24} />}
@@ -65,8 +64,11 @@ const Map = () => {
     const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
     const [filterCategory, setFilterCategory] = useState<string | null>(null);
 
-    // NOUVEAU : Le producteur sélectionné pour le panneau latéral
+    // Le producteur sélectionné pour le panneau latéral
     const [selectedProducer, setSelectedProducer] = useState<Producer | null>(null);
+
+    // NOUVEAU : Le producteur en cours de modification
+    const [editingProducer, setEditingProducer] = useState<Producer | null>(null);
 
     const fetchProducers = async () => {
         const { data, error } = await supabase.from('view_producers').select('*');
@@ -86,15 +88,30 @@ const Map = () => {
     }, [producers, filterCategory]);
 
     return (
-        <div className="h-full w-full relative overflow-hidden"> {/* overflow-hidden important pour le panel */}
+        <div className="h-full w-full relative overflow-hidden">
 
             <FilterBar activeCategory={filterCategory} onFilterChange={setFilterCategory} />
 
-            {/* --- LE PANNEAU LATÉRAL --- */}
-            {selectedProducer && (
+            {/* --- CAS 1 : MODE ÉDITION (L'utilisateur a cliqué sur le crayon) --- */}
+            {editingProducer && (
+                <AddProducerForm
+                    lat={editingProducer.lat}
+                    lng={editingProducer.lng}
+                    initialData={editingProducer} // On passe les données existantes
+                    onCancel={() => setEditingProducer(null)}
+                    onSuccess={() => {
+                        setEditingProducer(null);
+                        setSelectedProducer(null); // On ferme tout après l'envoi
+                    }}
+                />
+            )}
+
+            {/* --- CAS 2 : LE PANNEAU LATÉRAL (Affichage normal) --- */}
+            {selectedProducer && !editingProducer && (
                 <ProducerPanel
                     producer={selectedProducer}
                     onClose={() => setSelectedProducer(null)}
+                    onEdit={() => setEditingProducer(selectedProducer)} // Déclenche le mode édition
                 />
             )}
 
@@ -128,11 +145,11 @@ const Map = () => {
                 </div>
             )}
 
-            {/* --- BOUTON AJOUTER --- */}
-            {!isTargeting && !newLocation && !selectedProducer && ( // On cache le bouton si le panneau est ouvert
+            {/* --- BOUTON AJOUTER (Caché si on vise, ajoute, édite ou voit un détail) --- */}
+            {!isTargeting && !newLocation && !selectedProducer && !editingProducer && (
                 <button
                     onClick={() => setIsTargeting(true)}
-                    className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[400] bg-green-600 text-white px-6 py-3.5 rounded-full shadow-2xl font-bold active:scale-95 transition-transform flex items-center gap-2 border-2 border-white/20 hover:scale-105"
+                    className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[400] bg-green-600 text-white px-6 py-3.5 rounded-full shadow-2xl font-bold active:scale-95 transition-transform flex items-center gap-2 border-2 border-white/20 hover:scale-105 cursor-pointer"
                 >
                     <Plus size={24} />
                     <span className="text-sm uppercase tracking-wider">Ajouter un lieu</span>
@@ -144,16 +161,13 @@ const Map = () => {
                 <MapInstanceExposer setMap={setMapInstance} />
                 <LocateControl />
 
-                {/* MARQUEURS SANS POPUP */}
                 {filteredProducers.map((producer) => (
                     <Marker
                         key={producer.id}
                         position={[producer.lat, producer.lng]}
                         eventHandlers={{
                             click: () => {
-                                // C'est ici que la magie opère : au clic, on sélectionne le producteur !
                                 setSelectedProducer(producer);
-                                // Optionnel : On centre la carte sur le point (un peu décalé pour laisser place au panel)
                                 mapInstance?.flyTo([producer.lat, producer.lng], 14);
                             },
                         }}
@@ -163,8 +177,17 @@ const Map = () => {
                 {newLocation && <Marker position={[newLocation.lat, newLocation.lng]} opacity={0.6} />}
             </MapContainer>
 
+            {/* --- CAS 3 : CRÉATION D'UN NOUVEAU LIEU --- */}
             {newLocation && (
-                <AddProducerForm lat={newLocation.lat} lng={newLocation.lng} onCancel={() => setNewLocation(null)} onSuccess={() => { setNewLocation(null); fetchProducers(); }} />
+                <AddProducerForm
+                    lat={newLocation.lat}
+                    lng={newLocation.lng}
+                    onCancel={() => setNewLocation(null)}
+                    onSuccess={() => {
+                        setNewLocation(null);
+                        fetchProducers();
+                    }}
+                />
             )}
         </div>
     );

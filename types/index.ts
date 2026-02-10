@@ -11,4 +11,5 @@ export type Producer = {
     // AJOUTE CES DEUX LIGNES :
     address?: string;
     opening_hours?: any;
+    original_id?: string;
 };

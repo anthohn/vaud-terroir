@@ -3,30 +3,14 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
-    Check,
-    X,
-    MapPin,
-    Calendar,
-    ShieldCheck,
-    Loader2,
-    LayoutDashboard,
-    ExternalLink
+    Check, X, LayoutDashboard, ArrowRight, AlertTriangle, PlusCircle, Clock
 } from 'lucide-react';
+import { Producer } from '@/types';
 
-// On enrichit le type pour avoir toutes les infos utiles à la décision
-type PendingProducer = {
-    id: number;
-    name: string;
-    description: string;
-    image_url: string | null;
-    created_at: string;
-    type: string;
-    labels: string[] | null;
-    lat: number;
-    lng: number;
-};
+interface PendingProducer extends Producer {
+    original?: Producer;
+}
 
-// Petit helper pour les emojis
 const getTypeEmoji = (type: string) => {
     switch (type) {
         case 'vending_machine': return '🥛 Automate';
@@ -36,187 +20,267 @@ const getTypeEmoji = (type: string) => {
     }
 };
 
+const DAYS_ORDER = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su'];
+const DAY_LABELS: Record<string, string> = { mo: 'Lun', tu: 'Mar', we: 'Mer', th: 'Jeu', fr: 'Ven', sa: 'Sam', su: 'Dim' };
+
+// --- COMPOSANT SPECIAL POUR LES HORAIRES ---
+const HoursDiff = ({ oldHours, newHours }: { oldHours: any, newHours: any }) => {
+    // Si tout est vide
+    if (!oldHours && !newHours) return <span className="text-gray-400 italic">Non renseignés</span>;
+
+    // Si c'est un ajout complet (pas d'ancien)
+    if (!oldHours && newHours) {
+        return (
+            <div className="text-xs">
+                <div className="text-green-600 font-bold flex items-center gap-1 mb-1"><PlusCircle size={10} /> Ajout complet des horaires</div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 bg-green-50 p-2 rounded border border-green-100">
+                    {DAYS_ORDER.map(d => {
+                        const h = newHours[d];
+                        if (!h?.isOpen) return null; // On affiche que les jours ouverts pour gagner de la place
+                        return (
+                            <div key={d} className="flex justify-between text-green-800">
+                                <span className="font-bold w-6">{DAY_LABELS[d]}</span>
+                                <span>{h.start}-{h.end}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    }
+
+    // Si on a les deux, on compare jour par jour
+    const changes = [];
+    for (const d of DAYS_ORDER) {
+        const oldH = oldHours ? oldHours[d] : null;
+        const newH = newHours ? newHours[d] : null;
+
+        // On construit des chaînes simples pour comparer (ex: "08:00-18:00" ou "Fermé")
+        const oldStr = oldH?.isOpen ? `${oldH.start} - ${oldH.end}` : 'Fermé';
+        const newStr = newH?.isOpen ? `${newH.start} - ${newH.end}` : 'Fermé';
+
+        if (oldStr !== newStr) {
+            changes.push({ day: DAY_LABELS[d], old: oldStr, new: newStr });
+        }
+    }
+
+    if (changes.length === 0) return <span className="text-gray-600">Identique</span>;
+
+    return (
+        <div className="flex flex-col gap-1 w-full">
+            {changes.map((change, idx) => (
+                <div key={idx} className="flex items-center text-xs bg-white p-1 rounded border border-gray-100 shadow-sm">
+                    <span className="font-bold w-8 text-gray-700 uppercase">{change.day}</span>
+                    <span className="text-red-400 line-through mr-2 text-[10px]">{change.old}</span>
+                    <ArrowRight size={10} className="text-gray-400 mr-2" />
+                    <span className="text-green-700 font-bold">{change.new}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+
+// --- COMPOSANT GÉNÉRIQUE DIFF ---
+const DiffField = ({ label, oldVal, newVal, type = 'text' }: { label: string, oldVal?: any, newVal: any, type?: 'text' | 'tags' | 'hours' }) => {
+
+    const hasChanged = JSON.stringify(oldVal) !== JSON.stringify(newVal);
+
+    // Affichage "Simple" (Gris) si pas de changement
+    if ((oldVal === undefined || !hasChanged) && type !== 'hours') { // On force l'affichage pour hours pour voir le détail
+        if (!newVal) return null;
+        return (
+            <div className="mb-2 text-sm opacity-60">
+                <span className="font-bold text-gray-700 block text-[10px] uppercase">{label}</span>
+                <span className="text-gray-600">
+                    {type === 'tags' ? newVal.join(', ') : newVal}
+                </span>
+            </div>
+        );
+    }
+
+    // ALERTE JAUNE (Changement détecté)
+    return (
+        <div className="mb-3 text-sm bg-yellow-50 p-2 rounded border border-yellow-200 w-full">
+            <span className="font-bold text-yellow-800 block text-[10px] uppercase mb-2 flex items-center gap-1">
+                <AlertTriangle size={10} /> {label} {oldVal ? 'Modifié' : 'Défini'}
+            </span>
+
+            {/* CAS SPÉCIAL : HORAIRES */}
+            {type === 'hours' ? (
+                <HoursDiff oldHours={oldVal} newHours={newVal} />
+            ) :
+
+                /* CAS SPÉCIAL : TAGS */
+                type === 'tags' ? (
+                    <div className="flex flex-wrap gap-2">
+                        {((oldVal as string[]) || []).filter(x => !(newVal as string[] || []).includes(x)).map(t => (
+                            <span key={t} className="text-red-500 line-through text-xs bg-red-50 px-1 rounded border border-red-100">{t}</span>
+                        ))}
+                        {((newVal as string[]) || []).filter(x => !(oldVal as string[] || []).includes(x)).map(t => (
+                            <span key={t} className="text-green-700 font-bold text-xs bg-green-100 px-1 rounded border border-green-200">+ {t}</span>
+                        ))}
+                    </div>
+                ) :
+
+                    /* CAS STANDARD (TEXTE) */
+                    (
+                        <div className="flex flex-col gap-1">
+                            {oldVal ? (
+                                <div className="text-red-400 line-through text-xs opacity-70">{oldVal}</div>
+                            ) : (
+                                <div className="text-green-600 text-[10px] font-bold flex items-center gap-1"><PlusCircle size={10} /> Nouvel ajout</div>
+                            )}
+                            <div className="text-green-700 font-bold flex items-center gap-1">
+                                <ArrowRight size={12} /> {newVal}
+                            </div>
+                        </div>
+                    )}
+        </div>
+    );
+};
+
 export default function AdminPage() {
     const [pendings, setPendings] = useState<PendingProducer[]>([]);
     const [password, setPassword] = useState('');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // Login simple
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         if (password === 'admin1234') {
             setIsAuthenticated(true);
             fetchPendings();
         } else {
-            alert('Accès refusé. Essaye encore !');
+            alert('Accès refusé.');
         }
     };
 
     const fetchPendings = async () => {
         setLoading(true);
-        // On récupère TOUT pour bien juger (lat, lng, labels...)
-        const { data, error } = await supabase
+
+        // 1. Récupérer les pending
+        const { data: pendingData, error } = await supabase
             .from('producers')
             .select('*')
             .eq('status', 'pending')
             .order('created_at', { ascending: false });
 
-        if (data) setPendings(data as PendingProducer[]);
+        if (error || !pendingData) { setLoading(false); return; }
+
+        // 2. Récupérer les originaux manuellement
+        const originalIds = pendingData
+            .map(p => p.original_id)
+            .filter((id): id is number => id !== null && id !== undefined);
+
+        let originalsMap: Record<number, Producer> = {};
+
+        if (originalIds.length > 0) {
+            const { data: originalsData } = await supabase.from('producers').select('*').in('id', originalIds);
+            if (originalsData) {
+                originalsData.forEach(org => originalsMap[org.id] = org as Producer);
+            }
+        }
+
+        // 3. Fusionner
+        const finalData = pendingData.map(p => ({
+            ...p,
+            original: p.original_id ? originalsMap[p.original_id] : undefined
+        })) as PendingProducer[];
+
+        setPendings(finalData);
         setLoading(false);
     };
 
-    // Validation via RPC
-    const handleApprove = async (id: number) => {
-        const { error } = await supabase.rpc('approve_producer', { producer_id: id });
-        if (!error) fetchPendings();
+    const handleApprove = async (producer: PendingProducer) => {
+        setLoading(true);
+        if (producer.original_id) {
+            const { error } = await supabase.rpc('approve_edit', { edit_id: producer.id });
+            if (error) alert("Erreur fusion : " + error.message);
+        } else {
+            const { error } = await supabase.from('producers').update({ status: 'approved' }).eq('id', producer.id);
+            if (error) alert("Erreur validation : " + error.message);
+        }
+        await fetchPendings();
+        setLoading(false);
     };
 
-    // Rejet via RPC
     const handleReject = async (id: number) => {
-        if (confirm('Supprimer définitivement cette proposition ?')) {
-            const { error } = await supabase.rpc('reject_producer', { producer_id: id });
-            if (!error) fetchPendings();
+        if (confirm('Êtes-vous sûr de vouloir refuser et supprimer cette demande ?')) {
+            const { error } = await supabase.from('producers').delete().eq('id', id);
+
+            if (error) {
+                // Affiche l'erreur si ça plante (ex: RLS policy violation)
+                alert("Erreur lors de la suppression : " + error.message);
+            } else {
+                // Si tout est bon, on rafraîchit
+                fetchPendings();
+            }
         }
     };
 
-    // --- 1. UI DE LOGIN (Propre et centrée) ---
     if (!isAuthenticated) {
         return (
             <div className="flex h-screen items-center justify-center bg-gray-900 px-4">
-                <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-gray-700">
-                    <div className="flex justify-center mb-6">
-                        <div className="bg-green-100 p-4 rounded-full">
-                            <ShieldCheck size={40} className="text-green-600" />
-                        </div>
-                    </div>
-                    <h1 className="text-2xl font-bold text-center mb-2 text-gray-800">Admin VaudTerroir</h1>
-                    <p className="text-center text-gray-500 mb-8">Veuillez vous identifier pour modérer.</p>
-
+                <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
+                    <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">Admin VaudTerroir</h1>
                     <form onSubmit={handleLogin} className="space-y-4">
-                        <input
-                            type="password"
-                            placeholder="Mot de passe administrateur"
-                            className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-green-500 focus:outline-none transition-colors"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            autoFocus
-                        />
-                        <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-transform active:scale-95">
-                            Déverrouiller
-                        </button>
+                        <input type="password" placeholder="Mot de passe" className="w-full border p-3 rounded" value={password} onChange={e => setPassword(e.target.value)} autoFocus />
+                        <button className="w-full bg-green-600 text-white font-bold py-3 rounded">Entrer</button>
                     </form>
                 </div>
             </div>
         );
     }
 
-    // --- 2. DASHBOARD PRINCIPAL ---
     return (
         <main className="min-h-screen bg-gray-50">
-
-            {/* Header Admin */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
+            <header className="bg-white border-b sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
                 <div className="flex items-center gap-3">
-                    <div className="bg-black text-white p-2 rounded-lg">
-                        <LayoutDashboard size={20} />
-                    </div>
-                    <h1 className="font-bold text-xl text-gray-800">Control Room</h1>
-                    <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded-full text-xs font-bold">
-                        {pendings.length} en attente
-                    </span>
+                    <LayoutDashboard /> <h1 className="font-bold text-xl">Control Room</h1>
+                    <span className="bg-green-100 text-green-800 px-2 rounded-full text-xs font-bold">{pendings.length}</span>
                 </div>
-                <button onClick={fetchPendings} className="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-1">
-                    {loading ? <Loader2 size={16} className="animate-spin" /> : 'Rafraîchir'}
-                </button>
+                <button onClick={fetchPendings} className="text-sm text-gray-500">{loading ? '...' : 'Rafraîchir'}</button>
             </header>
 
-            <div className="p-6 max-w-7xl mx-auto">
+            <div className="p-6 max-w-7xl mx-auto grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {pendings.length === 0 && !loading && <div className="col-span-full text-center py-20 text-gray-400">Rien à valider.</div>}
 
-                {/* État vide (Si tout est propre) */}
-                {pendings.length === 0 && !loading && (
-                    <div className="flex flex-col items-center justify-center h-[60vh] text-gray-400">
-                        <div className="bg-white p-6 rounded-full shadow-sm mb-4">
-                            <Check size={48} className="text-green-500" />
+                {pendings.map(p => (
+                    <div key={p.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col relative">
+                        <div className="absolute top-3 right-3 z-10">
+                            {p.original ? (
+                                <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">✏️ Modif</span>
+                            ) : (
+                                <span className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">✨ Nouveau</span>
+                            )}
                         </div>
-                        <h2 className="text-xl font-bold text-gray-600">Tout est à jour !</h2>
-                        <p>Aucune nouvelle proposition à valider pour le moment.</p>
+
+                        <div className="h-32 bg-gray-100 relative group flex border-b border-gray-100">
+                            {p.image_url ? <img src={p.image_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">Pas d'image</div>}
+                            {p.original && p.original.image_url !== p.image_url && (
+                                <div className="absolute bottom-0 left-0 right-0 bg-orange-500/90 text-white text-center text-[10px] uppercase font-bold py-1">Nouvelle photo !</div>
+                            )}
+                        </div>
+
+                        <div className="p-5 flex-1 flex flex-col">
+                            <DiffField label="Nom" oldVal={p.original?.name} newVal={p.name} />
+                            <DiffField label="Type" oldVal={p.original ? getTypeEmoji(p.original.type) : null} newVal={getTypeEmoji(p.type)} />
+                            <DiffField label="Adresse" oldVal={p.original?.address} newVal={p.address} />
+
+                            {/* Le diff Horaires spécial */}
+                            <DiffField label="Horaires" oldVal={p.original?.opening_hours} newVal={p.opening_hours} type="hours" />
+
+                            <DiffField label="Produits" oldVal={p.original?.labels} newVal={p.labels} type="tags" />
+                            <DiffField label="Description" oldVal={p.original?.description} newVal={p.description} />
+
+                            <div className="grid grid-cols-2 gap-3 mt-auto pt-6 border-t border-gray-50">
+                                <button onClick={() => handleReject(p.id)} className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 font-bold text-sm cursor-pointer"><X size={16} /> Refuser</button>
+                                <button onClick={() => handleApprove(p)} className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white bg-green-600 hover:bg-green-700 font-bold text-sm cursor-pointer"><Check size={16} /> {p.original ? 'Fusionner' : 'Valider'}</button>
+                            </div>
+                        </div>
                     </div>
-                )}
-
-                {/* Grille des cartes */}
-                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                    {pendings.map(p => (
-                        <div key={p.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
-
-                            {/* Image Header */}
-                            <div className="h-48 bg-gray-100 relative group">
-                                {p.image_url ? (
-                                    <img src={p.image_url} alt="Preuve" className="w-full h-full object-cover" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-300 bg-gray-100">
-                                        Pas d'image
-                                    </div>
-                                )}
-                                <div className="absolute top-3 left-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold shadow-sm">
-                                    {getTypeEmoji(p.type)}
-                                </div>
-                            </div>
-
-                            {/* Contenu */}
-                            <div className="p-5 flex-1 flex flex-col">
-                                <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-bold text-lg text-gray-900 leading-tight">{p.name}</h3>
-                                    <a
-                                        href={`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-blue-500 hover:text-blue-700"
-                                        title="Vérifier sur Google Maps"
-                                    >
-                                        <ExternalLink size={18} />
-                                    </a>
-                                </div>
-
-                                {/* Tags */}
-                                <div className="flex flex-wrap gap-1 mb-3">
-                                    {p.labels?.map(label => (
-                                        <span key={label} className="text-[10px] uppercase font-bold bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                                            {label}
-                                        </span>
-                                    ))}
-                                </div>
-
-                                <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-600 mb-4 flex-1">
-                                    {p.description || <em className="text-gray-400">Pas de description...</em>}
-                                </div>
-
-                                <div className="flex items-center gap-2 text-xs text-gray-400 mb-4">
-                                    <Calendar size={12} />
-                                    Proposé le {new Date(p.created_at).toLocaleDateString()} à {new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </div>
-
-                                {/* Actions Bar */}
-                                <div className="grid grid-cols-2 gap-3 mt-auto pt-4 border-t border-gray-100">
-                                    <button
-                                        onClick={() => handleReject(p.id)}
-                                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-red-600 bg-red-50 hover:bg-red-100 font-bold transition-colors"
-                                    >
-                                        <X size={18} />
-                                        Refuser
-                                    </button>
-                                    <button
-                                        onClick={() => handleApprove(p.id)}
-                                        className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-white bg-green-600 hover:bg-green-700 font-bold shadow-sm transition-all active:scale-95"
-                                    >
-                                        <Check size={18} />
-                                        Valider
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                ))}
             </div>
         </main>
     );
