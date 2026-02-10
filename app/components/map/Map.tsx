@@ -1,14 +1,15 @@
 // components/map/Map.tsx
 'use client';
 
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase'; // Assure-toi que le chemin est bon
+import { supabase } from '@/lib/supabase';
 import { Producer } from '@/types';
+import AddProducerForm from './AddProducerForm'; // Import du formulaire
 
-// --- Hack pour corriger les icônes Leaflet (toujours nécessaire) ---
+// --- Fix Icônes (inchangé) ---
 const fixLeafletIcon = () => {
     // @ts-ignore
     delete L.Icon.Default.prototype._getIconUrl;
@@ -19,82 +20,84 @@ const fixLeafletIcon = () => {
     });
 };
 
-// Fonction helper pour choisir un emoji selon le type
 const getEmoji = (type: string) => {
     switch (type) {
-        case 'vending_machine': return '🥛'; // Automate
-        case 'farm_shop': return '🚜';      // Ferme
-        case 'cellar': return '🍷';         // Cave
+        case 'vending_machine': return '🥛';
+        case 'farm_shop': return '🚜';
+        case 'cellar': return '🍷';
         default: return '📍';
     }
+};
+
+// --- NOUVEAU COMPOSANT INTERNE : Gère les clics sur la carte ---
+const MapClickHandler = ({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) => {
+    useMapEvents({
+        click(e) {
+            onMapClick(e.latlng.lat, e.latlng.lng);
+        },
+    });
+    return null;
 };
 
 const Map = () => {
     const [producers, setProducers] = useState<Producer[]>([]);
 
+    // NOUVEAU : État pour gérer l'ajout
+    const [newLocation, setNewLocation] = useState<{ lat: number, lng: number } | null>(null);
+
+    // Déplacé dans une fonction pour pouvoir la rappeler après un ajout
+    const fetchProducers = async () => {
+        const { data, error } = await supabase.from('view_producers').select('*');
+        if (!error) setProducers(data as Producer[]);
+    };
+
     useEffect(() => {
         fixLeafletIcon();
-
-        // Fonction pour charger les producteurs
-        const fetchProducers = async () => {
-            const { data, error } = await supabase
-                .from('view_producers') // On appelle notre VUE, pas la table directe
-                .select('*');
-
-            if (error) {
-                console.error('Erreur chargement producteurs:', error);
-            } else {
-                console.log('Producteurs chargés:', data); // Pour débugger dans la console
-                setProducers(data as Producer[]);
-            }
-        };
-
         fetchProducers();
     }, []);
 
-    // Centre du canton
-    const vaudCenter: [number, number] = [46.64, 6.63];
-
     return (
-        <MapContainer
-            center={vaudCenter}
-            zoom={10}
-            scrollWheelZoom={true}
-            className="h-full w-full z-0"
-        >
-            <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+        // Ajout de 'relative' pour positionner le formulaire par dessus
+        <div className="h-full w-full relative">
 
-            {/* On boucle sur notre liste de producteurs */}
-            {producers.map((producer) => (
-                <Marker
-                    key={producer.id}
-                    position={[producer.lat, producer.lng]}
-                >
-                    <Popup>
-                        <div className="p-1">
-                            <h3 className="font-bold text-base flex items-center gap-2">
-                                <span>{getEmoji(producer.type)}</span>
-                                {producer.name}
-                            </h3>
-                            <p className="text-sm text-gray-600 mt-1">{producer.description}</p>
+            <MapContainer center={[46.64, 6.63]} zoom={10} scrollWheelZoom={true} className="h-full w-full z-0">
+                <TileLayer
+                    attribution='&copy; OpenStreetMap contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
 
-                            {/* Affichage des labels (Bio, etc.) */}
-                            <div className="flex gap-1 mt-2 flex-wrap">
-                                {producer.labels?.map(label => (
-                                    <span key={label} className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full border border-green-200">
-                                        {label}
-                                    </span>
-                                ))}
+                {/* Détecteur de clics */}
+                <MapClickHandler onMapClick={(lat, lng) => setNewLocation({ lat, lng })} />
+
+                {/* Marqueurs existants */}
+                {producers.map((producer) => (
+                    <Marker key={producer.id} position={[producer.lat, producer.lng]}>
+                        <Popup>
+                            <div className="p-1">
+                                <h3 className="font-bold text-base">{getEmoji(producer.type)} {producer.name}</h3>
+                                <p className="text-sm text-gray-600">{producer.description}</p>
                             </div>
-                        </div>
-                    </Popup>
-                </Marker>
-            ))}
+                        </Popup>
+                    </Marker>
+                ))}
 
-        </MapContainer>
+                {/* Marker temporaire pour montrer où on va ajouter */}
+                {newLocation && <Marker position={[newLocation.lat, newLocation.lng]} opacity={0.6} />}
+            </MapContainer>
+
+            {/* Affichage du formulaire si on a cliqué quelque part */}
+            {newLocation && (
+                <AddProducerForm
+                    lat={newLocation.lat}
+                    lng={newLocation.lng}
+                    onCancel={() => setNewLocation(null)}
+                    onSuccess={() => {
+                        setNewLocation(null);
+                        fetchProducers(); // Rafraîchit la carte immédiatement !
+                    }}
+                />
+            )}
+        </div>
     );
 };
 
