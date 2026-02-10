@@ -76,7 +76,7 @@ const Map = () => {
     const [newLocation, setNewLocation] = useState<{ lat: number, lng: number } | null>(null);
 
     // NOUVEAU STATE POUR LE FILTRE
-    const [filterType, setFilterType] = useState<string | null>(null);
+    const [filterCategory, setFilterCategory] = useState<string | null>(null);
 
     const fetchProducers = async () => {
         const { data, error } = await supabase.from('view_producers').select('*');
@@ -88,17 +88,21 @@ const Map = () => {
         fetchProducers();
     }, []);
 
-    // FILTRAGE DYNAMIQUE
+    // FILTRAGE PAR TAG (PRODUIT)
     const filteredProducers = useMemo(() => {
-        if (!filterType) return producers; // Si pas de filtre, on rend tout
-        return producers.filter(p => p.type === filterType);
-    }, [producers, filterType]);
+        if (!filterCategory) return producers; // Si "Tout", on affiche tout
+
+        // On regarde si la liste des labels du producteur contient la catégorie demandée
+        return producers.filter(p =>
+            p.labels && p.labels.includes(filterCategory)
+        );
+    }, [producers, filterCategory]);
 
     return (
         <div className="h-full w-full relative">
 
             {/* BARRE DE FILTRES EN HAUT */}
-            <FilterBar activeType={filterType} onFilterChange={setFilterType} />
+            <FilterBar activeCategory={filterCategory} onFilterChange={setFilterCategory} />
 
             <MapContainer center={[46.64, 6.63]} zoom={10} scrollWheelZoom={true} className="h-full w-full z-0">
                 <TileLayer
