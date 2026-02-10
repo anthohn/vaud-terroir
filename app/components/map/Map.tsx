@@ -9,6 +9,7 @@ import { Producer } from '@/types';
 import AddProducerForm from './AddProducerForm';
 import FilterBar from './FilterBar'; // <--- IMPORT NOUVEAU
 import { Navigation, Locate } from 'lucide-react';
+import Link from 'next/link';
 
 // --- Fix Icônes ---
 const fixLeafletIcon = () => {
@@ -127,7 +128,12 @@ const Map = () => {
                                 )}
 
                                 <div className="px-3 pb-3">
-                                    <h3 className="font-bold text-lg leading-tight mb-1">{producer.name}</h3>
+                                    <Link href={`/producer/${producer.id}`} className="group">
+                                        <h3 className="font-bold text-lg leading-tight mb-1 group-hover:text-green-600 group-hover:underline transition-colors cursor-pointer flex items-center justify-between">
+                                            <span>{producer.name}</span>
+                                            <span className="text-gray-400 text-xs">voir &rarr;</span>
+                                        </h3>
+                                    </Link>
                                     <div className="flex gap-1 mb-2 flex-wrap">
                                         {producer.labels?.map(label => (
                                             <span key={label} className="text-[10px] uppercase tracking-wider font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-sm">
