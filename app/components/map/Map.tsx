@@ -48,7 +48,7 @@ const LocateControl = () => {
 
     return (
         <div className="absolute bottom-32 right-4 z-400">
-            <button onClick={handleLocate} className="bg-white text-gray-700 p-3 rounded-full shadow-lg font-bold border border-gray-100">
+            <button onClick={handleLocate} className="bg-white text-gray-700 p-3 rounded-full shadow-lg font-bold border border-gray-100 cursor-pointer">
                 {loading ? <span className="animate-spin">⌛</span> : <Locate size={24} />}
             </button>
         </div>
@@ -62,12 +62,14 @@ const Map = () => {
     const [newLocation, setNewLocation] = useState<{ lat: number, lng: number } | null>(null);
     const [isTargeting, setIsTargeting] = useState(false);
     const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
-    const [filterCategory, setFilterCategory] = useState<string | null>(null);
+
+    // CHANGEMENT 1 : On gère un TABLEAU de tags, pas juste une string
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
     // Le producteur sélectionné pour le panneau latéral
     const [selectedProducer, setSelectedProducer] = useState<Producer | null>(null);
 
-    // NOUVEAU : Le producteur en cours de modification
+    // Le producteur en cours de modification
     const [editingProducer, setEditingProducer] = useState<Producer | null>(null);
 
     const fetchProducers = async () => {
@@ -80,28 +82,40 @@ const Map = () => {
         fetchProducers();
     }, []);
 
+    // CHANGEMENT 2 : Logique "AND" (Intersection stricte)
     const filteredProducers = useMemo(() => {
-        if (!filterCategory) return producers;
-        return producers.filter(p =>
-            p.labels && p.labels.includes(filterCategory)
-        );
-    }, [producers, filterCategory]);
+        // Si aucun tag sélectionné, on affiche tout
+        if (selectedTags.length === 0) return producers;
+
+        return producers.filter(p => {
+            // Sécurité : si le producteur n'a pas de labels, on l'exclut
+            if (!p.labels) return false;
+
+            // LOGIQUE "AND" : On vérifie que CHAQUE tag sélectionné est présent dans les labels du producteur
+            return selectedTags.every(tag => p.labels.includes(tag));
+        });
+    }, [producers, selectedTags]);
 
     return (
         <div className="h-full w-full relative overflow-hidden">
 
-            <FilterBar activeCategory={filterCategory} onFilterChange={setFilterCategory} />
+            {/* CHANGEMENT 3 : On passe les bonnes props au FilterBar (assure-toi d'avoir mis à jour FilterBar.tsx aussi) */}
+            <FilterBar
+                selectedTags={selectedTags}
+                onFilterChange={setSelectedTags}
+            />
 
             {/* --- CAS 1 : MODE ÉDITION (L'utilisateur a cliqué sur le crayon) --- */}
             {editingProducer && (
                 <AddProducerForm
                     lat={editingProducer.lat}
                     lng={editingProducer.lng}
-                    initialData={editingProducer} // On passe les données existantes
+                    initialData={editingProducer}
                     onCancel={() => setEditingProducer(null)}
                     onSuccess={() => {
                         setEditingProducer(null);
-                        setSelectedProducer(null); // On ferme tout après l'envoi
+                        setSelectedProducer(null);
+                        fetchProducers(); // Rafraîchir les données
                     }}
                 />
             )}
@@ -111,13 +125,13 @@ const Map = () => {
                 <ProducerPanel
                     producer={selectedProducer}
                     onClose={() => setSelectedProducer(null)}
-                    onEdit={() => setEditingProducer(selectedProducer)} // Déclenche le mode édition
+                    onEdit={() => setEditingProducer(selectedProducer)}
                 />
             )}
 
             {/* --- MODE VISÉE (Targeting) --- */}
             {isTargeting && (
-                <div className="absolute inset-0 pointer-events-none z-1000 flex items-center justify-center">
+                <div className="absolute inset-0 pointer-events-none z-[1000] flex items-center justify-center">
                     <div className="relative transform -translate-y-1/2">
                         <MapPin size={48} className="text-red-600 fill-current drop-shadow-2xl animate-bounce" />
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-4 bg-black/30 rounded-full blur-sm"></div>
@@ -149,7 +163,7 @@ const Map = () => {
             {!isTargeting && !newLocation && !selectedProducer && !editingProducer && (
                 <button
                     onClick={() => setIsTargeting(true)}
-                    className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-400 bg-green-600 text-white px-6 py-3.5 rounded-full shadow-2xl font-bold active:scale-95 transition-transform flex items-center gap-2 border-2 border-white/20 hover:scale-105 cursor-pointer"
+                    className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[400] bg-green-600 text-white px-6 py-3.5 rounded-full shadow-2xl font-bold active:scale-95 transition-transform flex items-center gap-2 border-2 border-white/20 hover:scale-105 cursor-pointer"
                 >
                     <Plus size={24} />
                     <span className="text-sm uppercase tracking-wider">Ajouter un lieu</span>
