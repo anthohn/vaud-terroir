@@ -1,6 +1,7 @@
 'use client';
 
 import { clsx } from 'clsx';
+import { PRODUCT_TAGS } from '@/lib/constants';
 
 type Props = {
     selectedTags: string[];
@@ -10,15 +11,9 @@ type Props = {
 export default function FilterBar({ selectedTags, onFilterChange }: Props) {
 
     const filters = [
-        { id: 'all', label: 'Tout', emoji: '🔍' },
-        { id: 'Lait', label: 'Lait cru', emoji: '🥛' },
-        { id: 'Fromage', label: 'Fromages', emoji: '🧀' },
-        { id: 'Oeufs', label: 'Œufs', emoji: '🥚' },
-        { id: 'Viande', label: 'Viandes', emoji: '🥩' },
-        { id: 'Legumes', label: 'F&L', emoji: '🥦' },
-        { id: 'Vin', label: 'Vins', emoji: '🍷' },
-        { id: 'Miel', label: 'Miel', emoji: '🍯' },
-    ];
+    { id: 'all', label: 'Tout', emoji: '🔍' },
+    ...PRODUCT_TAGS.map(t => ({ id: t.id, label: t.label, emoji: t.emoji }))
+];
 
     const handleToggle = (tagId: string) => {
         // CAS 1 : Clic sur "Tout" -> On vide le tableau

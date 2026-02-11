@@ -7,18 +7,15 @@ import {
     ArrowRight, AlertTriangle, PlusCircle, LogOut, Image as ImageIcon
 } from 'lucide-react';
 import { Producer } from '@/types';
+import { getSaleTypeInfo } from '@/lib/constants';
 
 interface PendingProducer extends Producer {
     original?: Producer;
 }
 
 const getTypeEmoji = (type: string) => {
-    switch (type) {
-        case 'vending_machine': return '🥛 Automate';
-        case 'farm_shop': return '🚜 Ferme';
-        case 'cellar': return '🍷 Cave';
-        default: return '📍 Autre';
-    }
+    const info = getSaleTypeInfo(type);
+    return `${info.emoji} ${info.label}`;
 };
 
 // --- COMPOSANT DIFF IMAGES (VERSION FINALE) ---

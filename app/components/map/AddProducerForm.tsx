@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
+import { PRODUCT_TAGS, SALE_TYPES } from '@/lib/constants';
 import {
     CheckCircle, X, Plus, Loader2, Store, AlignLeft, Image as ImageIcon, ShoppingBag, Search, Globe,
     Phone
@@ -73,12 +74,7 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
     const [address, setAddress] = useState(initialData?.address || '');
     const [selectedTags, setSelectedTags] = useState<string[]>(initialData?.labels || []);
 
-    const availableTags = [
-        { id: 'Lait', label: '🥛 Lait cru' }, { id: 'Fromage', label: '🧀 Fromages' },
-        { id: 'Oeufs', label: '🥚 Œufs' }, { id: 'Viande', label: '🥩 Viandes' },
-        { id: 'Legumes', label: '🥦 F&L' }, { id: 'Vin', label: '🍷 Vins' },
-        { id: 'Miel', label: '🍯 Miel' },
-    ];
+    const availableTags = PRODUCT_TAGS.map(t => ({ id: t.id, label: `${t.emoji} ${t.label}` }));
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -179,6 +175,15 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
         });
     };
 
+    useEffect(() => {
+    if (type === 'beekeeper' && !selectedTags.includes('Miel')) {
+        setSelectedTags(prev => [...prev, 'Miel']);
+    }
+    if (type === 'butcher' && !selectedTags.includes('Viande')) {
+        setSelectedTags(prev => [...prev, 'Viande']);
+    }
+}, [type]);
+
     const toggleTag = (tag: string) => {
         if (selectedTags.includes(tag)) setSelectedTags(selectedTags.filter(t => t !== tag));
         else setSelectedTags([...selectedTags, tag]);
@@ -267,11 +272,10 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
                                     <label className="text-sm font-medium text-gray-700 mb-1 block">Type de vente</label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><ShoppingBag size={18} className="text-gray-400" /></div>
-                                        <select value={type} onChange={e => setType(e.target.value)} className="w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm bg-white cursor-pointer focus:ring-2 focus:ring-green-500 outline-none shadow-sm appearance-none">
-                                            <option value="farm_shop">🚜 Magasin à la ferme</option>
-                                            <option value="vending_machine">🥛 Automate à lait / casiers</option>
-                                            <option value="cellar">🍷 Cave / Vigneron</option>
-                                            <option value="market">🥕 Marché</option>
+                                        <select value={type} onChange={e => setType(e.target.value)} className="w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none transition-all shadow-sm">
+                                            {SALE_TYPES.map(t => (
+                                                <option key={t.id} value={t.id}>{t.emoji} {t.label}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
