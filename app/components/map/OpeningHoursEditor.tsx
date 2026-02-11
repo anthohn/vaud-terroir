@@ -58,11 +58,7 @@ export default function OpeningHoursEditor({ initialData, onChange }: Props) {
     };
 
     return (
-        <div className="border border-gray-300 p-4 rounded-xl mt-2">
-            <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1 mb-3">
-                <Clock size={12} /> Horaires d'ouverture
-            </label>
-
+        <>
             <div className="flex justify-between mb-4 px-1">
                 {DAYS.map(day => (
                     <button
@@ -82,7 +78,7 @@ export default function OpeningHoursEditor({ initialData, onChange }: Props) {
                 ))}
             </div>
 
-            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm animate-in fade-in">
+            <div className="bg-white p-3 rounded-lg border border-gray-300 shadow-sm animate-in fade-in">
                 <div className="flex justify-between items-center mb-3">
                     <span className="font-bold text-sm text-gray-800">{DAY_NAMES[selectedDay]}</span>
                     <button
@@ -104,6 +100,6 @@ export default function OpeningHoursEditor({ initialData, onChange }: Props) {
                     <div className="text-center text-sm text-gray-400 py-2 italic">Fermé ce jour-là 💤</div>
                 )}
             </div>
-        </div>
+        </>
     );
 }
