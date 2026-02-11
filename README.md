@@ -11,11 +11,12 @@ Ce projet est une **Web App Progressive (PWA)** permettant aux utilisateurs de t
 ## Stack Technique
 
 ### Frontend
-- **Framework :** [Next.js 16+](https://nextjs.org/) (App Router)
+- **Framework :** [Next.js 16+](https://nextjs.org/) (App Router & Server Actions)
 - **Langage :** TypeScript
 - **Styling :** [Tailwind CSS](https://tailwindcss.com/)
-- **Icônes :** [Lucide React](https://lucide.dev/)
-- **State Management :** React Hooks (`useState`, `useEffect`, `useRef`)
+- **Icônes :** - [Lucide React](https://lucide.dev/) (Interface générale)
+  - [React Icons](https://react-icons.github.io/react-icons/) (Logos de marques : Waze, Google, Apple)
+- **State Management :** React Hooks (`useState`, `useEffect`, `useRef`, `useMemo`)
 
 ### Cartographie & Géolocalisation (100% Open Source)
 - **Moteur de carte :** [Leaflet](https://leafletjs.com/) (via `react-leaflet`)

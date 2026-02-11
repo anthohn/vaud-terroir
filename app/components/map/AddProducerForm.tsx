@@ -222,7 +222,7 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
     };
 
     return (
-        <div className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer" onClick={handleBackdropClick}>
+        <div className="fixed inset-0 z-1000 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer" onClick={handleBackdropClick}>
 
             {isSubmitted ? (
                 <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm border-2 border-green-600 text-center animate-in fade-in zoom-in duration-300 cursor-default">
@@ -335,7 +335,7 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
 
                                     {/* LISTE SUGGESTIONS */}
                                     {showSuggestions && suggestions.length > 0 && (
-                                        <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-top-1 z-[100]">
+                                        <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-top-1 z-100">
                                             {suggestions.map((s, i) => (
                                                 <div
                                                     key={i}
@@ -364,7 +364,7 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
 
                         <div className="flex gap-4 mt-8 pt-4 border-t border-gray-100 bg-white sticky bottom-0 z-10">
                             <button type="button" onClick={onCancel} className="flex-1 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 font-bold text-sm hover:bg-gray-50 transition-colors cursor-pointer">Annuler</button>
-                            <button disabled={loading} type="submit" className="flex-[2] py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-green-100 active:scale-[0.98]">
+                            <button disabled={loading} type="submit" className="flex-2 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-green-100 active:scale-[0.98]">
                                 {loading ? <Loader2 className="animate-spin" size={20} /> : (initialData ? 'Enregistrer les modifications' : 'Valider la création')}
                             </button>
                         </div>

@@ -126,7 +126,7 @@ const DiffField = ({ label, oldVal, newVal, type = 'text' }: { label: string, ol
     // Si Changement détecté
     return (
         <div className="mb-3 text-sm bg-yellow-50 p-2 rounded border border-yellow-200 w-full relative">
-            <span className="font-bold text-yellow-800 block text-[10px] uppercase mb-1 flex items-center gap-1">
+            <span className="font-bold text-yellow-800 text-[10px] uppercase mb-1 flex items-center gap-1">
                 <AlertTriangle size={10} /> {label}
             </span>
 

@@ -3,6 +3,7 @@
 import { Producer } from '@/types';
 import { X, Navigation, Clock, MapPin, Edit, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
+import RouteSelector from './../RouteSelector';
 
 type Props = {
     producer: Producer;
@@ -250,14 +251,11 @@ export default function ProducerPanel({ producer, onClose, onEdit }: Props) {
 
                 {/* Footer GPS */}
                 <div className="p-4 border-t border-gray-200 bg-white sticky bottom-0 z-20">
-                    <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${producer.lat},${producer.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 w-full bg-green-600 text-white py-3.5 rounded-xl font-bold shadow-lg hover:bg-green-700 transition-all active:scale-[0.98]"
-                    >
-                        <Navigation size={20} /> Y aller (Itinéraire)
-                    </a>
+                    <RouteSelector
+                        lat={producer.lat}
+                        lng={producer.lng}
+                        address={producer.address}
+                    />
                 </div>
             </div>
         </>
