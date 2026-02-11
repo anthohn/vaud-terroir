@@ -60,7 +60,7 @@ export default function RouteSelector({ lat, lng, address }: Props) {
                 className="w-full bg-green-600 text-white font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-green-700 transition-all active:scale-[0.98] cursor-pointer"
             >
                 <Navigation size={20} />
-                <span>Y aller (Itinéraire)</span>
+                <span>Y aller maintenant !</span>
             </button>
 
             {/* MENU DÉROULANT (Action Sheet) */}

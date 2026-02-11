@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
     CheckCircle, X, Plus, Loader2, MapPin, Clock, Tag,
-    Store, AlignLeft, Image as ImageIcon, ShoppingBag, Search
+    Store, AlignLeft, Image as ImageIcon, ShoppingBag, Search, Globe
 } from 'lucide-react';
 import OpeningHoursEditor, { WeeklyHours } from './OpeningHoursEditor';
 import { Producer } from '@/types';
@@ -44,6 +44,8 @@ type Props = {
 export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSuccess, onCancel, initialData }: Props) {
     const [loading, setLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
+
+    const [website, setWebsite] = useState(initialData?.website || '');
 
     const [currentCoords, setCurrentCoords] = useState({ lat: initialLat, lng: initialLng });
 
@@ -204,9 +206,14 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
             const finalImageUrls = await Promise.all(finalImagePromises);
 
             const producerData = {
-                name, description, type,
+                name,
+                description,
+                type,
+                website,
                 labels: selectedTags.length > 0 ? selectedTags : ['Divers'],
                 location: `POINT(${currentCoords.lng} ${currentCoords.lat})`,
+                lat: currentCoords.lat,
+                lng: currentCoords.lng,
                 images: finalImageUrls,
                 address,
                 opening_hours: openingHours,
@@ -246,25 +253,7 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
 
                             {/* COLONNE GAUCHE (Identique à avant) */}
                             <div className="flex flex-col gap-6">
-                                <div className="pb-2 border-b border-gray-100 font-bold text-gray-400 text-xs uppercase tracking-wider">Identité</div>
-                                <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2"><ImageIcon size={14} /> Photos</label>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {images.map((img, idx) => (
-                                            <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group bg-gray-50 shadow-sm">
-                                                <img src={img.type === 'existing' ? img.url : img.previewUrl} className={`w-full h-full object-cover transition-opacity ${img.type === 'new' ? 'opacity-90' : ''}`} alt="Aperçu" />
-                                                {img.type === 'new' && <span className="absolute bottom-0 left-0 right-0 bg-green-600 text-white text-[9px] text-center py-0.5 font-bold">NOUVEAU</span>}
-                                                <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 transform scale-90 group-hover:scale-100"><X size={12} /></button>
-                                            </div>
-                                        ))}
-                                        <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-green-50 hover:border-green-400 hover:text-green-600 text-gray-400 transition-all group">
-                                            <div className="bg-gray-100 p-2 rounded-full mb-1 group-hover:bg-white group-hover:shadow-sm transition-all"><Plus size={20} /></div>
-                                            <span className="text-[10px] uppercase font-bold">Ajouter</span>
-                                            <input type="file" multiple accept="image/*" onChange={handleFileSelect} className="hidden" />
-                                        </label>
-                                    </div>
-                                    <p className="text-[11px] text-gray-400 mt-2 italic flex justify-end">{images.length} photo(s)</p>
-                                </div>
+                                {/* <div className="pb-2 border-b border-gray-100 font-bold text-gray-400 text-xs uppercase tracking-wider">Identité</div> */}
                                 <div>
                                     <label className="text-sm font-medium text-gray-700 mb-1 block">Nom du lieu</label>
                                     <div className="relative">
@@ -285,19 +274,55 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
                                     </div>
                                 </div>
                                 <div>
+                                    <label className="text-sm font-medium text-gray-700 mb-1 block">Site web ou Réseaux sociaux</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <Globe size={18} className="text-gray-400" />
+                                        </div>
+                                        <input 
+                                            value={website} 
+                                            onChange={e => setWebsite(e.target.value)} 
+                                            type="url" 
+                                            className="w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none transition-all shadow-sm" 
+                                            placeholder="https://www.maferme.ch" 
+                                        />
+                                    </div>
+                                </div>
+                                
+                                
+                                <div>
                                     <label className="text-sm font-medium text-gray-700 mb-1 block">Description courte</label>
                                     <div className="relative">
                                         <div className="absolute top-3 left-3 pointer-events-none"><AlignLeft size={18} className="text-gray-400" /></div>
                                         <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm h-28 focus:ring-2 focus:ring-green-500 outline-none transition-all shadow-sm resize-none" placeholder="Détails sur l'accès, les produits phares..." />
                                     </div>
                                 </div>
+
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">Photos</label>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        {images.map((img, idx) => (
+                                            <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group bg-gray-50 shadow-sm">
+                                                <img src={img.type === 'existing' ? img.url : img.previewUrl} className={`w-full h-full object-cover transition-opacity ${img.type === 'new' ? 'opacity-90' : ''}`} alt="Aperçu" />
+                                                {img.type === 'new' && <span className="absolute bottom-0 left-0 right-0 bg-green-600 text-white text-[9px] text-center py-0.5 font-bold">NOUVEAU</span>}
+                                                <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 transform scale-90 group-hover:scale-100"><X size={12} /></button>
+                                            </div>
+                                        ))}
+                                        <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-green-50 hover:border-green-400 hover:text-green-600 text-gray-400 transition-all group">
+                                            <div className="bg-gray-100 p-2 rounded-full mb-1 group-hover:bg-white group-hover:shadow-sm transition-all"><Plus size={20} /></div>
+                                            <span className="text-[10px] uppercase font-bold">Ajouter</span>
+                                            <input type="file" multiple accept="image/*" onChange={handleFileSelect} className="hidden" />
+                                        </label>
+                                    </div>
+                                    <p className="text-[11px] text-gray-400 mt-2 italic flex justify-end">{images.length} photo(s)</p>
+                                </div>
                             </div>
 
                             {/* COLONNE DROITE : LOGISTIQUE */}
                             <div className="flex flex-col gap-6">
-                                <div className="pb-2 border-b border-gray-100 font-bold text-gray-400 text-xs uppercase tracking-wider">Logistique</div>
+                                {/* <div className="pb-2 border-b border-gray-100 font-bold text-gray-400 text-xs uppercase tracking-wider">Logistique</div> */}
                                 <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2"><Tag size={14} /> Produits disponibles</label>
+                                    <label className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">Produits disponibles</label>
                                     <div className="flex flex-wrap gap-2">
                                         {availableTags.map(tag => (
                                             <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)} className={`px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer border transition-all duration-200 active:scale-95 select-none flex items-center gap-1 ${selectedTags.includes(tag.id) ? 'bg-green-600 text-white border-green-600 shadow-md shadow-green-100 -translate-y-px' : 'bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-600'}`}>
@@ -310,7 +335,7 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
 
                                 {/* SECTION ADRESSE */}
                                 <div className="relative z-50" ref={suggestionRef}>
-                                    <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"><MapPin size={14} /> Adresse exacte</label>
+                                    <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">Adresse exacte</label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                             {isSearching ? <Loader2 size={18} className="text-green-600 animate-spin" /> : <Search size={18} className="text-gray-400" />}
@@ -352,11 +377,11 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
                                             ))}
                                         </div>
                                     )}
-                                    <p className="text-[11px] text-gray-400 mt-1 ml-1 flex items-center gap-1">📍 Adresse normalisée.</p>
+                                    {/* <p className="text-[11px] text-gray-400 mt-1 ml-1 flex items-center gap-1">📍 Adresse normalisée.</p> */}
                                 </div>
 
                                 <div>
-                                    <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2"><Clock size={14} /> Horaires d'ouverture</label>
+                                    <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">Horaires d'ouverture</label>
                                     <OpeningHoursEditor initialData={initialData?.opening_hours} onChange={setOpeningHours} />
                                 </div>
                             </div>
