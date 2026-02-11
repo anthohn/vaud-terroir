@@ -94,6 +94,15 @@ export default function AddProducerForm({ lat, lng, onSuccess, onCancel, initial
         else setSelectedTags([...selectedTags, tag]);
     };
 
+    // --- NOUVEAU : GESTION DU CLIC BACKDROP ---
+    const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        // On vérifie que l'élément cliqué (target) est bien l'élément qui porte l'écouteur (currentTarget = le fond noir)
+        // Si on clique sur le formulaire blanc (enfant), target sera différent de currentTarget, donc ça ne fermera pas.
+        if (e.target === e.currentTarget) {
+            onCancel();
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -149,11 +158,16 @@ export default function AddProducerForm({ lat, lng, onSuccess, onCancel, initial
     // --- RENDERING ---
 
     return (
-        <div className="fixed inset-0 z-1000 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        // AJOUT DE l'onClick ICI sur le conteneur principal
+        <div
+            className="fixed inset-0 z-1000 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer" // cursor-pointer indique qu'on peut cliquer pour fermer
+            onClick={handleBackdropClick}
+        >
 
             {/* ETAT SUCCES */}
             {isSubmitted ? (
-                <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm border-2 border-green-600 text-center animate-in fade-in zoom-in duration-300">
+                // On ajoute cursor-default pour ne pas avoir la main sur la modale elle-même
+                <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm border-2 border-green-600 text-center animate-in fade-in zoom-in duration-300 cursor-default">
                     <CheckCircle size={48} className="text-green-600 mx-auto mb-4" />
                     <h3 className="font-bold text-xl mb-2">Envoyé ! 🚜</h3>
                     <p className="text-gray-600 mb-6 text-sm">Vos modifications seront validées par un admin.</p>
@@ -162,7 +176,8 @@ export default function AddProducerForm({ lat, lng, onSuccess, onCancel, initial
             ) : (
 
                 // FORMULAIRE PRINCIPAL
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col">
+                // On ajoute cursor-default ici aussi
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col cursor-default">
 
                     {/* Header Fixe */}
                     <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-20 shadow-sm">
@@ -176,151 +191,85 @@ export default function AddProducerForm({ lat, lng, onSuccess, onCancel, initial
 
                     <form onSubmit={handleSubmit} className="p-6">
 
-                        {/* GRILLE 2 COLONNES */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* ... Le reste du contenu du formulaire reste identique ... */}
+                        {/* J'ai abrégé ici pour la lisibilité, mais garde tout ton code intérieur tel quel */}
 
-                            {/* --- COLONNE GAUCHE : IDENTITÉ VISUELLE --- */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* ... COLONNE GAUCHE ... */}
                             <div className="flex flex-col gap-6">
                                 <div className="pb-2 border-b border-gray-100 font-bold text-gray-400 text-xs uppercase tracking-wider">Identité</div>
-
-                                {/* PHOTOS - ZONE AMÉLIORÉE */}
                                 <div>
                                     <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2"><ImageIcon size={14} /> Photos</label>
                                     <div className="grid grid-cols-3 gap-3">
                                         {images.map((img, idx) => (
                                             <div key={img.id} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group bg-gray-50 shadow-sm">
-                                                <img
-                                                    src={img.type === 'existing' ? img.url : img.previewUrl}
-                                                    className={`w-full h-full object-cover transition-opacity ${img.type === 'new' ? 'opacity-90' : ''}`}
-                                                    alt="Aperçu"
-                                                />
+                                                <img src={img.type === 'existing' ? img.url : img.previewUrl} className={`w-full h-full object-cover transition-opacity ${img.type === 'new' ? 'opacity-90' : ''}`} alt="Aperçu" />
                                                 {img.type === 'new' && <span className="absolute bottom-0 left-0 right-0 bg-green-600 text-white text-[9px] text-center py-0.5 font-bold">NOUVEAU</span>}
-                                                <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 transform scale-90 group-hover:scale-100">
-                                                    <X size={12} />
-                                                </button>
+                                                <button type="button" onClick={() => removeImage(idx)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 transform scale-90 group-hover:scale-100"><X size={12} /></button>
                                             </div>
                                         ))}
                                         <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-green-50 hover:border-green-400 hover:text-green-600 text-gray-400 transition-all group">
-                                            <div className="bg-gray-100 p-2 rounded-full mb-1 group-hover:bg-white group-hover:shadow-sm transition-all">
-                                                <Plus size={20} />
-                                            </div>
+                                            <div className="bg-gray-100 p-2 rounded-full mb-1 group-hover:bg-white group-hover:shadow-sm transition-all"><Plus size={20} /></div>
                                             <span className="text-[10px] uppercase font-bold">Ajouter</span>
                                             <input type="file" multiple accept="image/*" onChange={handleFileSelect} className="hidden" />
                                         </label>
                                     </div>
                                     <p className="text-[11px] text-gray-400 mt-2 italic flex justify-end">{images.length} photo(s)</p>
                                 </div>
-
-                                {/* NOM - AVEC ICÔNE */}
                                 <div>
                                     <label className="text-sm font-medium text-gray-700 mb-1 block">Nom du lieu</label>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Store size={18} className="text-gray-400" />
-                                        </div>
-                                        <input
-                                            required
-                                            value={name}
-                                            onChange={e => setName(e.target.value)}
-                                            type="text"
-                                            className="w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none transition-all shadow-sm"
-                                            placeholder="Ex: Ferme du Chalet"
-                                        />
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Store size={18} className="text-gray-400" /></div>
+                                        <input required value={name} onChange={e => setName(e.target.value)} type="text" className="w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none transition-all shadow-sm" placeholder="Ex: Ferme du Chalet" />
                                     </div>
                                 </div>
-
-                                {/* TYPE - AVEC ICÔNE */}
                                 <div>
                                     <label className="text-sm font-medium text-gray-700 mb-1 block">Type de vente</label>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <ShoppingBag size={18} className="text-gray-400" />
-                                        </div>
-                                        <select
-                                            value={type}
-                                            onChange={e => setType(e.target.value)}
-                                            className="w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm bg-white cursor-pointer focus:ring-2 focus:ring-green-500 outline-none shadow-sm appearance-none"
-                                        >
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><ShoppingBag size={18} className="text-gray-400" /></div>
+                                        <select value={type} onChange={e => setType(e.target.value)} className="w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm bg-white cursor-pointer focus:ring-2 focus:ring-green-500 outline-none shadow-sm appearance-none">
                                             <option value="farm_shop">🚜 Magasin à la ferme</option>
                                             <option value="vending_machine">🥛 Automate à lait / casiers</option>
                                             <option value="cellar">🍷 Cave / Vigneron</option>
                                             <option value="market">🥕 Marché</option>
                                         </select>
-                                        {/* Petite flèche custom pour remplacer celle du navigateur si besoin, sinon on laisse appearance-auto ou on retire appearance-none */}
                                     </div>
                                 </div>
-
-                                {/* DESCRIPTION - AVEC ICÔNE */}
                                 <div>
                                     <label className="text-sm font-medium text-gray-700 mb-1 block">Description courte</label>
                                     <div className="relative">
-                                        <div className="absolute top-3 left-3 pointer-events-none">
-                                            <AlignLeft size={18} className="text-gray-400" />
-                                        </div>
-                                        <textarea
-                                            value={description}
-                                            onChange={e => setDescription(e.target.value)}
-                                            className="w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm h-28 focus:ring-2 focus:ring-green-500 outline-none transition-all shadow-sm resize-none"
-                                            placeholder="Détails sur l'accès, les produits phares..."
-                                        />
+                                        <div className="absolute top-3 left-3 pointer-events-none"><AlignLeft size={18} className="text-gray-400" /></div>
+                                        <textarea value={description} onChange={e => setDescription(e.target.value)} className="w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm h-28 focus:ring-2 focus:ring-green-500 outline-none transition-all shadow-sm resize-none" placeholder="Détails sur l'accès, les produits phares..." />
                                     </div>
                                 </div>
                             </div>
 
-                            {/* --- COLONNE DROITE : LOGISTIQUE --- */}
+                            {/* ... COLONNE DROITE ... */}
                             <div className="flex flex-col gap-6">
                                 <div className="pb-2 border-b border-gray-100 font-bold text-gray-400 text-xs uppercase tracking-wider">Logistique</div>
-
-                                {/* TAGS - INTERACTIFS */}
                                 <div>
                                     <label className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2"><Tag size={14} /> Produits disponibles</label>
                                     <div className="flex flex-wrap gap-2">
                                         {availableTags.map(tag => (
-                                            <button
-                                                key={tag.id}
-                                                type="button"
-                                                onClick={() => toggleTag(tag.id)}
-                                                className={`
-                                                    px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer border transition-all duration-200 active:scale-95 select-none flex items-center gap-1
-                                                    ${selectedTags.includes(tag.id)
-                                                        ? 'bg-green-600 text-white border-green-600 shadow-md shadow-green-100 -translate-y-px'
-                                                        : 'bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-600'
-                                                    }
-                                                `}
-                                            >
+                                            <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)} className={`px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer border transition-all duration-200 active:scale-95 select-none flex items-center gap-1 ${selectedTags.includes(tag.id) ? 'bg-green-600 text-white border-green-600 shadow-md shadow-green-100 -translate-y-px' : 'bg-white text-gray-600 border-gray-200 hover:border-green-400 hover:text-green-600'}`}>
                                                 {selectedTags.includes(tag.id) && <CheckCircle size={10} />}
                                                 {tag.label}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
-
-                                {/* ADRESSE - AVEC ICÔNE */}
                                 <div>
                                     <label className="text-sm font-medium text-gray-700 mb-1 flex items-center gap-2"><MapPin size={14} /> Adresse exacte</label>
                                     <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <MapPin size={18} className="text-green-600" />
-                                        </div>
-                                        <input
-                                            value={address}
-                                            onChange={(e) => setAddress(e.target.value)}
-                                            type="text"
-                                            className={`w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm shadow-sm focus:ring-2 focus:ring-green-500 outline-none transition-all ${isFetchingAddress ? 'bg-gray-50 text-gray-400' : ''}`}
-                                        />
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><MapPin size={18} className="text-green-600" /></div>
+                                        <input value={address} onChange={(e) => setAddress(e.target.value)} type="text" className={`w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm shadow-sm focus:ring-2 focus:ring-green-500 outline-none transition-all ${isFetchingAddress ? 'bg-gray-50 text-gray-400' : ''}`} />
                                         {isFetchingAddress && <Loader2 size={16} className="absolute right-3 top-3 animate-spin text-green-600" />}
                                     </div>
-                                    <p className="text-[11px] text-gray-400 mt-1 ml-1 flex items-center gap-1">
-                                        📍 Détectée automatiquement, modifiable si nécessaire.
-                                    </p>
+                                    <p className="text-[11px] text-gray-400 mt-1 ml-1 flex items-center gap-1">📍 Détectée automatiquement, modifiable si nécessaire.</p>
                                 </div>
-
-                                {/* HORAIRES */}
                                 <div>
                                     <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2"><Clock size={14} /> Horaires d'ouverture</label>
-                                    {/* <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 shadow-inner"> */}
                                     <OpeningHoursEditor initialData={initialData?.opening_hours} onChange={setOpeningHours} />
-                                    {/* </div> */}
                                 </div>
                             </div>
                         </div>
