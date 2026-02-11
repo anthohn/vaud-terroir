@@ -22,7 +22,7 @@ export default function FilterBar({ activeCategory, onFilterChange }: Props) {
     ];
 
     return (
-        <div className="absolute top-4 left-0 right-0 z-[500] flex justify-center pointer-events-none">
+        <div className="absolute top-4 left-0 right-0 z-500 flex justify-center pointer-events-none">
             <div className="bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-lg border border-gray-200 pointer-events-auto flex gap-1 overflow-x-auto max-w-[95%] scrollbar-hide">
                 {filters.map((f) => {
                     const isActive = (activeCategory === null && f.id === 'all') || activeCategory === f.id;
@@ -32,7 +32,7 @@ export default function FilterBar({ activeCategory, onFilterChange }: Props) {
                             key={f.id}
                             onClick={() => onFilterChange(f.id === 'all' ? null : f.id)}
                             className={clsx(
-                                "flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap",
+                                "flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap cursor-pointer",
                                 isActive
                                     ? "bg-green-600 text-white shadow-md"
                                     : "bg-transparent text-gray-600 hover:bg-gray-100"
