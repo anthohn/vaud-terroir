@@ -1,7 +1,7 @@
 'use client';
 
 import { Producer } from '@/types';
-import { X, Navigation, Clock, MapPin, Edit, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import { X, Clock, MapPin, Edit, ChevronLeft, ChevronRight, Phone, Globe, ExternalLink } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import RouteSelector from './../RouteSelector';
 
@@ -215,11 +215,46 @@ export default function ProducerPanel({ producer, onClose, onEdit }: Props) {
 
                     {/* Infos Pratiques */}
                     <div className="space-y-6">
+                        {/* Adresse */}
                         <div className="flex items-start gap-4 text-gray-700">
                             <div className="bg-gray-100 p-2 rounded-full"><MapPin size={20} className="text-gray-500" /></div>
-                            <div>
-                                <p className="font-bold text-sm text-gray-900">Adresse</p>
-                                <p className="text-sm text-gray-600 mt-0.5">{producer.address || `GPS: ${producer.lat.toFixed(4)}, ${producer.lng.toFixed(4)}`}</p>
+                            <p className="font-bold text-sm text-gray-900">Adresse</p>
+                            <p className="text-sm text-gray-600 mt-0.5">{producer.address || `GPS: ${producer.lat.toFixed(4)}, ${producer.lng.toFixed(4)}`}</p>
+                        </div>
+
+                        {/* Téléphone */}
+                        <div className="flex items-start gap-4 text-gray-700">
+                            <div className="bg-gray-100 p-2 rounded-full"><Phone size={20} className="text-gray-500" /></div>
+                            <div className="flex-1">
+                                <p className="font-bold text-sm text-gray-900">Téléphone</p>
+                                {producer.phone ? (
+                                    <a href={`tel:${producer.phone}`} className="text-sm text-green-600 hover:text-green-700 font-bold transition-colors block mt-0.5">
+                                        {producer.phone}
+                                    </a>
+                                ) : (
+                                    <p className="text-sm text-gray-400 mt-0.5 italic">Non disponible</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Site Internet */}
+                        <div className="flex items-start gap-4 text-gray-700">
+                            <div className="bg-gray-100 p-2 rounded-full"><Globe size={20} className="text-gray-500" /></div>
+                            <div className="flex-1">
+                                <p className="font-bold text-sm text-gray-900">Site Internet</p>
+                                {producer.website ? (
+                                    <a 
+                                        href={producer.website.startsWith('http') ? producer.website : `https://${producer.website}`} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="text-sm text-green-600 hover:text-green-700 font-bold flex items-center gap-1 mt-0.5 transition-colors group cursor-pointer"
+                                    >
+                                        Consulter le site
+                                        <ExternalLink size={14} className="opacity-70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                    </a>
+                                ) : (
+                                    <p className="text-sm text-gray-400 mt-0.5 italic">Non disponible</p>
+                                )}
                             </div>
                         </div>
 

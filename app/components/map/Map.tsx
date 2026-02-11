@@ -73,7 +73,12 @@ const Map = () => {
     const [editingProducer, setEditingProducer] = useState<Producer | null>(null);
 
     const fetchProducers = async () => {
-        const { data, error } = await supabase.from('view_producers').select('*');
+    // On tape directement dans la table 'producers'
+    const { data, error } = await supabase
+        .from('producers')
+        .select('*')
+        .eq('status', 'approved'); // On filtre ici
+
         if (!error) setProducers(data as Producer[]);
     };
 

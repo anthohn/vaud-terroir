@@ -13,4 +13,5 @@ export type Producer = {
     status?: string;
     created_at?: string;
     website?: string;
+    phone?: string;
 };

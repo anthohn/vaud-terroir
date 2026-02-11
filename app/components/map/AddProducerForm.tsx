@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
-    CheckCircle, X, Plus, Loader2, MapPin, Clock, Tag,
-    Store, AlignLeft, Image as ImageIcon, ShoppingBag, Search, Globe
+    CheckCircle, X, Plus, Loader2, Store, AlignLeft, Image as ImageIcon, ShoppingBag, Search, Globe,
+    Phone
 } from 'lucide-react';
 import OpeningHoursEditor, { WeeklyHours } from './OpeningHoursEditor';
 import { Producer } from '@/types';
@@ -46,6 +46,7 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
     const [isSubmitted, setIsSubmitted] = useState(false);
 
     const [website, setWebsite] = useState(initialData?.website || '');
+    const [phone, setPhone] = useState(initialData?.phone || '');
 
     const [currentCoords, setCurrentCoords] = useState({ lat: initialLat, lng: initialLng });
 
@@ -210,6 +211,7 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
                 description,
                 type,
                 website,
+                phone,
                 labels: selectedTags.length > 0 ? selectedTags : ['Divers'],
                 location: `POINT(${currentCoords.lng} ${currentCoords.lat})`,
                 lat: currentCoords.lat,
@@ -286,6 +288,14 @@ export default function AddProducerForm({ lat: initialLat, lng: initialLng, onSu
                                             className="w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none transition-all shadow-sm" 
                                             placeholder="https://www.maferme.ch" 
                                         />
+                                    </div>
+                                </div>
+                                {/* Téléphone */}
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 mb-1 block">Téléphone</label>
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Phone size={18} className="text-gray-400" /></div>
+                                        <input value={phone} onChange={e => setPhone(e.target.value)} type="tel" className="w-full border border-gray-300 pl-10 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none transition-all shadow-sm" placeholder="079 123 45 67" />
                                     </div>
                                 </div>
                                 

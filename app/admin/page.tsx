@@ -41,9 +41,9 @@ const ImagesDiff = ({ oldImages, newImages }: { oldImages?: string[], newImages?
                     const isNew = added.includes(url);
                     return (
                         <div key={`new-${i}`} className="relative w-20 h-20 shrink-0 group">
-                            <img
-                                src={url}
-                                className={`w-full h-full object-cover rounded-lg shadow-sm border-2 ${isNew ? 'border-green-500' : 'border-white'}`}
+                            <img 
+                                src={url} 
+                                className={`w-full h-full object-cover rounded-lg shadow-sm border-2 ${isNew ? 'border-green-500' : 'border-white'}`} 
                             />
                             <div className="absolute top-1 left-1 bg-black/50 text-white text-[8px] px-1.5 py-0.5 rounded-md backdrop-blur-sm">
                                 {i + 1}
@@ -158,21 +158,24 @@ export default function AdminPage() {
     };
 
     const fetchPendings = async () => {
-    setLoading(true);
-    const { data: pendingData, error } = await supabase
-        .from('producers')
-        .select('*')
-        // On récupère les 'pending' ET les 'scraped'
-        .in('status', ['pending', 'scraped'])
-        .order('created_at', { ascending: false });
+        setLoading(true);
+        const { data: pendingData, error } = await supabase
+            .from('producers')
+            .select('*')
+            // On récupère les 'pending' (utilisateurs) ET les 'scraped' (script)
+            .in('status', ['pending', 'scraped'])
+            .order('created_at', { ascending: false });
 
-    if (error || !pendingData) { setLoading(false); return; }
+        if (error || !pendingData) { setLoading(false); return; }
+        
         const originalIds = pendingData.map(p => p.original_id).filter((id): id is number => id !== null);
         let originalsMap: Record<number, Producer> = {};
+        
         if (originalIds.length > 0) {
             const { data: originalsData } = await supabase.from('producers').select('*').in('id', originalIds);
             if (originalsData) originalsData.forEach(org => originalsMap[org.id] = org as Producer);
         }
+        
         setPendings(pendingData.map(p => ({ ...p, original: p.original_id ? originalsMap[p.original_id] : undefined })) as PendingProducer[]);
         setLoading(false);
     };
@@ -181,25 +184,37 @@ export default function AdminPage() {
         if (!confirm('Valider cette modification ?')) return;
         setLoading(true);
         try {
+            const updateData: any = {
+                name: producer.name,
+                description: producer.description,
+                type: producer.type,
+                labels: producer.labels,
+                website: producer.website,
+                phone: producer.phone,
+                opening_hours: producer.opening_hours,
+                address: producer.address,
+                lat: producer.lat,
+                lng: producer.lng,
+
+                status: 'approved'
+            };
+
+            // Gestion des images
+            if (producer.images && producer.images.length > 0) {
+                updateData.images = producer.images;
+            }
+
             if (producer.original_id) {
-                const updateData: any = {
-                    name: producer.name,
-                    address: producer.address,
-                    lat: producer.lat,
-                    lng: producer.lng,
-                    description: producer.description,
-                    type: producer.type,
-                    labels: producer.labels,
-                    opening_hours: producer.opening_hours,
-                    status: 'approved'
-                };
-                if (producer.images && producer.images.length > 0) updateData.images = producer.images;
+                // Modification d'un existant
                 const { error: updateError } = await supabase.from('producers').update(updateData).eq('id', producer.original_id);
                 if (updateError) throw updateError;
+                // Supprimer la demande pending
                 await supabase.from('producers').delete().eq('id', producer.id);
             } else {
-                await supabase.from('producers').update({ status: 'approved' }).eq('id', producer.id);
+                // Création (ou Scraping validé)
+                await supabase.from('producers').update(updateData).eq('id', producer.id);
             }
+            
             await fetchPendings();
         } catch (error: any) { alert("Erreur : " + error.message); }
         finally { setLoading(false); }
@@ -274,6 +289,11 @@ export default function AdminPage() {
                             <DiffField label="Nom" oldVal={p.original?.name} newVal={p.name} />
                             <DiffField label="Type" oldVal={p.original ? getTypeEmoji(p.original.type) : null} newVal={getTypeEmoji(p.type)} />
                             <DiffField label="Adresse" oldVal={p.original?.address} newVal={p.address} />
+                            
+                            {/* ✅ AJOUTS VISUELS DANS LE DASHBOARD */}
+                            <DiffField label="Téléphone" oldVal={p.original?.phone} newVal={p.phone} />
+                            <DiffField label="Site Web" oldVal={p.original?.website} newVal={p.website} />
+                            
                             <DiffField label="Horaires" oldVal={p.original?.opening_hours} newVal={p.opening_hours} type="hours" />
                             <DiffField label="Produits" oldVal={p.original?.labels} newVal={p.labels} type="tags" />
                             <DiffField label="Description" oldVal={p.original?.description} newVal={p.description} />
