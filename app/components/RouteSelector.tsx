@@ -14,7 +14,6 @@ export default function RouteSelector({ lat, lng, address }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
-    // Fermer si clic extérieur
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -25,18 +24,31 @@ export default function RouteSelector({ lat, lng, address }: Props) {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // On prépare l'adresse encodée proprement (pour éviter les bugs avec les espaces/accents)
+    const encodedAddress = address ? encodeURIComponent(address) : null;
+
     const openAppleMaps = () => {
-        window.open(`http://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`, '_system');
+        // Apple Maps : daddr (Destination Address) accepte soit une adresse texte, soit lat,lng
+        const dest = encodedAddress || `${lat},${lng}`;
+        window.open(`http://maps.apple.com/?daddr=${dest}&dirflg=d`, '_system');
         setIsOpen(false);
     };
 
     const openGoogleMaps = () => {
-        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+        // Google Maps : query accepte l'adresse texte. C'est le plus fiable.
+        const query = encodedAddress || `${lat},${lng}`;
+        window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
         setIsOpen(false);
     };
 
     const openWaze = () => {
-        window.open(`https://waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
+        // Waze : q = recherche texte (Adresse), ll = coordonnées (GPS)
+        // Si on a l'adresse, on utilise 'q', sinon 'll'
+        const url = encodedAddress
+            ? `https://waze.com/ul?q=${encodedAddress}&navigate=yes`
+            : `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+
+        window.open(url, '_blank');
         setIsOpen(false);
     };
 
@@ -51,11 +63,11 @@ export default function RouteSelector({ lat, lng, address }: Props) {
                 <span>Y aller (Itinéraire)</span>
             </button>
 
-            {/* MENU DÉROULANT (Pop-up) */}
+            {/* MENU DÉROULANT (Action Sheet) */}
             {isOpen && (
                 <div className="absolute bottom-full left-0 right-0 mb-3 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200 z-50">
 
-                    {/* Header du menu */}
+                    {/* Header */}
                     <div className="p-3 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                         <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Choisir le GPS</span>
                         <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-gray-200 rounded-full cursor-pointer transition-colors">
@@ -73,7 +85,7 @@ export default function RouteSelector({ lat, lng, address }: Props) {
                             </div>
                             <div>
                                 <div className="font-bold text-gray-800 text-sm">Apple Plans</div>
-                                <div className="text-[10px] text-gray-400">Défaut sur iPhone</div>
+                                <div className="text-[10px] text-gray-400">Via l'adresse postale</div>
                             </div>
                         </button>
 
@@ -84,7 +96,7 @@ export default function RouteSelector({ lat, lng, address }: Props) {
                             </div>
                             <div>
                                 <div className="font-bold text-gray-800 text-sm">Google Maps</div>
-                                <div className="text-[10px] text-gray-400">Info trafic précise</div>
+                                <div className="text-[10px] text-gray-400">Recherche textuelle</div>
                             </div>
                         </button>
 
@@ -95,7 +107,7 @@ export default function RouteSelector({ lat, lng, address }: Props) {
                             </div>
                             <div>
                                 <div className="font-bold text-gray-800 text-sm">Waze</div>
-                                <div className="text-[10px] text-gray-400">Radars & Police</div>
+                                <div className="text-[10px] text-gray-400">Navigation directe</div>
                             </div>
                         </button>
 
