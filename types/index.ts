@@ -6,10 +6,10 @@ export type Producer = {
     labels: string[];
     lat: number;
     lng: number;
-    image_url: string | null;
-    status?: string;
-    // AJOUTE CES DEUX LIGNES :
+    images: string[];
     address?: string;
     opening_hours?: any;
-    original_id?: string;
+    original_id?: number | null;
+    status?: string;
+    created_at?: string;
 };

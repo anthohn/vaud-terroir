@@ -47,7 +47,7 @@ const LocateControl = () => {
     };
 
     return (
-        <div className="absolute bottom-32 right-4 z-[400]">
+        <div className="absolute bottom-32 right-4 z-400">
             <button onClick={handleLocate} className="bg-white text-gray-700 p-3 rounded-full shadow-lg font-bold border border-gray-100">
                 {loading ? <span className="animate-spin">⌛</span> : <Locate size={24} />}
             </button>
@@ -117,7 +117,7 @@ const Map = () => {
 
             {/* --- MODE VISÉE (Targeting) --- */}
             {isTargeting && (
-                <div className="absolute inset-0 pointer-events-none z-[1000] flex items-center justify-center">
+                <div className="absolute inset-0 pointer-events-none z-1000 flex items-center justify-center">
                     <div className="relative transform -translate-y-1/2">
                         <MapPin size={48} className="text-red-600 fill-current drop-shadow-2xl animate-bounce" />
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-4 bg-black/30 rounded-full blur-sm"></div>
@@ -126,7 +126,7 @@ const Map = () => {
                         Déplacez la carte pour viser 🎯
                     </div>
                     <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex gap-3 w-full max-w-xs px-4 pointer-events-auto">
-                        <button onClick={() => setIsTargeting(false)} className="flex-1 bg-white text-gray-800 py-3 rounded-full font-bold shadow-xl border border-gray-200 flex items-center justify-center gap-2">
+                        <button onClick={() => setIsTargeting(false)} className="flex-1 bg-white text-gray-800 py-3 rounded-full font-bold shadow-xl border border-gray-200 flex items-center justify-center gap-2 cursor-pointer">
                             <X size={20} className="text-gray-500" /> <span>Annuler</span>
                         </button>
                         <button
@@ -137,7 +137,7 @@ const Map = () => {
                                     setIsTargeting(false);
                                 }
                             }}
-                            className="flex-1 bg-green-600 text-white py-3 rounded-full font-bold shadow-xl flex items-center justify-center gap-2"
+                            className="flex-1 bg-green-600 text-white py-3 rounded-full font-bold shadow-xl flex items-center justify-center gap-2 cursor-pointer"
                         >
                             <Check size={20} /> <span>Valider</span>
                         </button>
@@ -149,7 +149,7 @@ const Map = () => {
             {!isTargeting && !newLocation && !selectedProducer && !editingProducer && (
                 <button
                     onClick={() => setIsTargeting(true)}
-                    className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[400] bg-green-600 text-white px-6 py-3.5 rounded-full shadow-2xl font-bold active:scale-95 transition-transform flex items-center gap-2 border-2 border-white/20 hover:scale-105 cursor-pointer"
+                    className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-400 bg-green-600 text-white px-6 py-3.5 rounded-full shadow-2xl font-bold active:scale-95 transition-transform flex items-center gap-2 border-2 border-white/20 hover:scale-105 cursor-pointer"
                 >
                     <Plus size={24} />
                     <span className="text-sm uppercase tracking-wider">Ajouter un lieu</span>

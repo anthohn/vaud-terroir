@@ -70,7 +70,7 @@ export default function OpeningHoursEditor({ initialData, onChange }: Props) {
                         type="button"
                         onClick={() => setSelectedDay(day.key)}
                         className={`
-                            w-8 h-8 rounded-full text-xs font-bold flex items-center justify-center transition-all
+                            w-8 h-8 rounded-full text-xs font-bold flex items-center justify-center transition-all cursor-pointer
                             ${selectedDay === day.key ? 'ring-2 ring-offset-1 ring-green-600 scale-110' : ''}
                             ${schedule[day.key]?.isOpen
                                 ? 'bg-green-100 text-green-700 border border-green-200'
@@ -88,7 +88,7 @@ export default function OpeningHoursEditor({ initialData, onChange }: Props) {
                     <button
                         type="button"
                         onClick={() => toggleDay(selectedDay)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${schedule[selectedDay]?.isOpen ? 'bg-green-600' : 'bg-gray-300'}`}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${schedule[selectedDay]?.isOpen ? 'bg-green-600' : 'bg-gray-300'}`}
                     >
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${schedule[selectedDay]?.isOpen ? 'translate-x-6' : 'translate-x-1'}`} />
                     </button>
@@ -96,9 +96,9 @@ export default function OpeningHoursEditor({ initialData, onChange }: Props) {
 
                 {schedule[selectedDay]?.isOpen ? (
                     <div className="flex items-center gap-2">
-                        <input type="time" value={schedule[selectedDay].start} onChange={(e) => updateTime('start', e.target.value)} className="border p-2 rounded text-sm flex-1 text-center bg-gray-50 outline-none focus:border-green-500" />
+                        <input type="time" value={schedule[selectedDay].start} onChange={(e) => updateTime('start', e.target.value)} className="border cursor-pointer p-2 rounded text-sm flex-1 text-center bg-gray-50 outline-none focus:border-green-500" />
                         <span className="text-gray-400">-</span>
-                        <input type="time" value={schedule[selectedDay].end} onChange={(e) => updateTime('end', e.target.value)} className="border p-2 rounded text-sm flex-1 text-center bg-gray-50 outline-none focus:border-green-500" />
+                        <input type="time" value={schedule[selectedDay].end} onChange={(e) => updateTime('end', e.target.value)} className="border cursor-pointer p-2 rounded text-sm flex-1 text-center bg-gray-50 outline-none focus:border-green-500" />
                     </div>
                 ) : (
                     <div className="text-center text-sm text-gray-400 py-2 italic">Fermé ce jour-là 💤</div>
