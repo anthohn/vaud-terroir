@@ -11,7 +11,7 @@ Ce projet est une **Web App Progressive (PWA)** permettant aux utilisateurs de t
 ## Stack Technique
 
 ### Frontend
-- **Framework :** [Next.js 14+](https://nextjs.org/) (App Router)
+- **Framework :** [Next.js 16+](https://nextjs.org/) (App Router)
 - **Langage :** TypeScript
 - **Styling :** [Tailwind CSS](https://tailwindcss.com/)
 - **Icônes :** [Lucide React](https://lucide.dev/)
@@ -43,7 +43,7 @@ La table principale `producers`.
 | `name` | `text` | Nom du lieu |
 | `description`| `text` | Détails produits/accès |
 | `type` | `text` | ex: `farm_shop`, `vending_machine`, `cellar` |
-| `location` | `geography(Point)` | **CRUCIAL** : Point GPS PostGIS (Lon/Lat) |
+| `location` | `geography(Point)` | Point GPS PostGIS (Lon/Lat) |
 | `images` | `text[]` | Tableau d'URLs des photos |
 | `address` | `text` | Adresse textuelle formatée (Nominatim) |
 | `labels` | `text[]` | Tags (ex: `['Lait', 'Bio', 'Vaud+']`) |
