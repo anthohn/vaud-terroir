@@ -11,6 +11,7 @@ import FilterBar from './FilterBar';
 import ProducerPanel from './ProducerPanel';
 import { Locate, Plus, MapPin, X, Check } from 'lucide-react';
 import NavigationMenu from '@/app/components/NavigationMenu';
+import { getSaleTypeInfo, getProductEmoji } from '@/lib/constants';
 
 // --- Fix Icônes Leaflet ---
 const fixLeafletIcon = () => {
@@ -20,6 +21,36 @@ const fixLeafletIcon = () => {
         iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
         iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
         shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    });
+};
+
+const createCustomMarker = (producer: Producer, activeFilters: string[]) => {
+    // ✅ ON AJOUTE :string ICI
+    // Cela autorise n'importe quel emoji (string) à être stocké dans la variable
+    let displayEmoji: string = getSaleTypeInfo(producer.type).emoji;
+
+    // 2. LA MAGIE : Si l'utilisateur a cliqué sur un filtre (ex: 🥩)
+    if (activeFilters.length > 0) {
+        const matchedTag = activeFilters.find(tag => producer.labels?.includes(tag));
+
+        if (matchedTag) {
+            displayEmoji = getProductEmoji(matchedTag);
+        }
+    }
+
+    // 3. Le reste du code reste identique
+    return L.divIcon({
+        className: 'bg-transparent border-none',
+        html: `
+            <div class="relative group cursor-pointer drop-shadow-md">
+                <div class="w-10 h-10 bg-white border-2 border-green-600 rounded-full flex items-center justify-center text-xl transform transition-transform duration-300 group-hover:scale-110 group-hover:-translate-y-1">
+                    ${displayEmoji}
+                </div>
+                <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45 border-r-2 border-b-2 border-green-600 -z-10 transition-transform duration-300 group-hover:translate-y-1"></div>
+            </div>
+        `,
+        iconSize: [40, 48],
+        iconAnchor: [20, 48],
     });
 };
 
@@ -187,6 +218,8 @@ const Map = () => {
                     <Marker
                         key={producer.id}
                         position={[producer.lat, producer.lng]}
+                        // On passe le producteur ET les filtres actuels
+                        icon={createCustomMarker(producer, selectedTags)}
                         eventHandlers={{
                             click: () => {
                                 setSelectedProducer(producer);

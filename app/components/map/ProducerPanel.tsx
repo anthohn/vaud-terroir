@@ -243,10 +243,10 @@ export default function ProducerPanel({ producer, onClose, onEdit }: Props) {
                             <div className="flex-1">
                                 <p className="font-bold text-sm text-gray-900">Site Internet</p>
                                 {producer.website ? (
-                                    <a 
-                                        href={producer.website.startsWith('http') ? producer.website : `https://${producer.website}`} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer" 
+                                    <a
+                                        href={producer.website.startsWith('http') ? producer.website : `https://${producer.website}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                         className="text-sm text-green-600 hover:text-green-700 font-bold flex items-center gap-1 mt-0.5 transition-colors group cursor-pointer"
                                     >
                                         Consulter le site
