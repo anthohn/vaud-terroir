@@ -10,6 +10,7 @@ import AddProducerForm from './AddProducerForm';
 import FilterBar from './FilterBar';
 import ProducerPanel from './ProducerPanel';
 import { Locate, Plus, MapPin, X, Check } from 'lucide-react';
+import NavigationMenu from '@/app/components/NavigationMenu';
 
 // --- Fix Icônes Leaflet ---
 const fixLeafletIcon = () => {
@@ -73,11 +74,11 @@ const Map = () => {
     const [editingProducer, setEditingProducer] = useState<Producer | null>(null);
 
     const fetchProducers = async () => {
-    // On tape directement dans la table 'producers'
-    const { data, error } = await supabase
-        .from('producers')
-        .select('*')
-        .eq('status', 'approved'); // On filtre ici
+        // On tape directement dans la table 'producers'
+        const { data, error } = await supabase
+            .from('producers')
+            .select('*')
+            .eq('status', 'approved'); // On filtre ici
 
         if (!error) setProducers(data as Producer[]);
     };
@@ -103,6 +104,8 @@ const Map = () => {
 
     return (
         <div className="h-full w-full relative overflow-hidden">
+
+            <NavigationMenu />
 
             {/* CHANGEMENT 3 : On passe les bonnes props au FilterBar (assure-toi d'avoir mis à jour FilterBar.tsx aussi) */}
             <FilterBar

@@ -11,9 +11,9 @@ type Props = {
 export default function FilterBar({ selectedTags, onFilterChange }: Props) {
 
     const filters = [
-    { id: 'all', label: 'Tout', emoji: '🔍' },
-    ...PRODUCT_TAGS.map(t => ({ id: t.id, label: t.label, emoji: t.emoji }))
-];
+        { id: 'all', label: 'Tout', emoji: '🔍' },
+        ...PRODUCT_TAGS.map(t => ({ id: t.id, label: t.label, emoji: t.emoji }))
+    ];
 
     const handleToggle = (tagId: string) => {
         // CAS 1 : Clic sur "Tout" -> On vide le tableau
@@ -48,7 +48,7 @@ export default function FilterBar({ selectedTags, onFilterChange }: Props) {
                             key={f.id}
                             onClick={() => handleToggle(f.id)}
                             className={clsx(
-                                "flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer select-none",
+                                "flex items-center gap-1.5 px-3 py-2 rounded-full text-md font-bold transition-all whitespace-nowrap cursor-pointer select-none",
                                 isActive
                                     ? "bg-green-600 text-white shadow-md transform scale-105"
                                     : "bg-transparent text-gray-600 hover:bg-gray-100"
