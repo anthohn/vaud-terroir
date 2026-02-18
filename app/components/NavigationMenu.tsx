@@ -23,7 +23,7 @@ export default function NavigationMenu() {
 
     const navItems = [
         { icon: MapIcon, label: 'Carte des producteurs', href: '/' },
-        { icon: BookOpen, label: 'Notre Manifeste', href: '/manifeste' },
+        { icon: BookOpen, label: 'Notre Démarche', href: '/demarche' },
         { icon: HeartHandshake, label: 'Comment ça marche ?', href: '/concept' },
         { icon: Mail, label: 'Contact & Suggestions', href: '/contact' },
     ];
@@ -78,10 +78,9 @@ export default function NavigationMenu() {
                             className="group flex items-center justify-between p-4 rounded-2xl hover:bg-green-600 hover:shadow-md transition-all duration-200 cursor-pointer"
                         >
                             <div className="flex items-center gap-4 text-gray-700 group-hover:text-white transition-colors">
-                                <div className="bg-green-100 p-2 rounded-xl group-hover:bg-white/20 transition-colors">
+                                <div className="p-2 rounded-xl">
                                     <item.icon size={20} className="text-green-700 group-hover:text-white" />
                                 </div>
-                                {/* Avec Alegreya, le text-lg rendra ce texte très élégant */}
                                 <span className="font-bold text-lg">{item.label}</span>
                             </div>
                             <ChevronRight size={18} className="text-gray-300 group-hover:text-white/70 group-hover:translate-x-1 transition-all" />
@@ -94,7 +93,6 @@ export default function NavigationMenu() {
                     <h4 className="text-xs font-bold text-gray-900 mb-3 uppercase tracking-widest text-green-700 flex items-center gap-2">
                         Notre Philosophie
                     </h4>
-                    {/* Le texte en italique avec Alegreya donnera un effet littéraire superbe */}
                     <p className="text-sm text-gray-600 leading-relaxed italic">
                         « Remettre le paysan au centre du village. Fini les marges de la grande distribution. Ici, vos achats soutiennent directement ceux qui nourrissent notre terroir. »
                     </p>
