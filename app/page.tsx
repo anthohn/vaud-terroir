@@ -16,7 +16,7 @@ const MapWithNoSSR = dynamic(() => import('@/app/components/map/Map'), {
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between relative">
-      <div className="w-full h-[100dvh]">
+      <div className="w-full h-dvh">
         <MapWithNoSSR />
       </div>
     </main>

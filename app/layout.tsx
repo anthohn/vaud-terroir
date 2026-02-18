@@ -1,23 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+import { Alegreya } from "next/font/google";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const fontMain = Alegreya({
   subsets: ["latin"],
+  display: 'swap',
+  variable: "--font-main",
 });
-
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1, // Empêche le zoom intempestif sur les boutons
-  userScalable: false, // Force l'UX "App-like"
-  themeColor: "#22c55e", // Un vert "VaudTerroir"
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#22c55e",
 };
 
 export const metadata: Metadata = {
@@ -33,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${fontMain.className} ${fontMain.variable} antialiased text-gray-800`}
         suppressHydrationWarning={true}
       >
         {children}
